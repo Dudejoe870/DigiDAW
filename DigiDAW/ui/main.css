@@ -1,0 +1,15 @@
+body {
+    margin: 0;
+    overflow: hidden;
+}
+
+main {
+    flow: horizontal;
+    height: *;
+    background-color: var(back);
+    color: var(text);
+}
+
+main > section {
+    height: *;
+}

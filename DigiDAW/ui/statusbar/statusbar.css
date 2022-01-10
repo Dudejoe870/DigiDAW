@@ -1,0 +1,10 @@
+@set bar {
+    :root {
+        height: 1.3em;
+        background: var(panel-back);
+        color: var(panel-text);
+        font-size: 100%;
+        font-family: Consolas;
+        padding-left: 32px;
+    }
+}

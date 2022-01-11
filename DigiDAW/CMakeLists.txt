@@ -12,7 +12,7 @@ macro(subdirlist result curdir)
     set(${result} ${dirlist})
 endmacro()
 
-add_executable (DigiDAW "src/ui/uimain.cpp" "src/ui/resources.cpp" "src/ui/mainwindow.cpp" "src/ui/mainwindow.h" "src/ui/common.h" "src/ui/digidaw.h" "src/ui/registry.h" "src/ui/registry.cpp" "src/ui/digidaw.cpp")
+add_executable (DigiDAW "src/ui/uimain.cpp" "src/ui/resources.cpp" "src/ui/mainwindow.cpp" "src/ui/mainwindow.h" "src/ui/common.h" "src/ui/digidaw.h" "src/ui/registry.h" "src/ui/registry.cpp" "src/ui/digidaw.cpp" "src/audio/engine.cpp" "src/audio/common.h" "src/common.h" "src/audio/engine.h" "src/main.h" "src/main.cpp")
 
 set_property(TARGET DigiDAW PROPERTY CXX_STANDARD 20)
 

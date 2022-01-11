@@ -1,11 +1,13 @@
-#include "registry.h"
+#include "ui/registry.h"
 
 #include "ui/digidaw.h"
 
 namespace DigiDAW::UI
 {
-	void Registry::RegisterAllAssets()
+	Registry::Registry(MainApplication* pApp)
 	{
+		this->pApp = pApp;
+
 		SciterSetGlobalAsset(new DigiDAW());
 	}
 }

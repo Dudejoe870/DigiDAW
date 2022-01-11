@@ -2,11 +2,15 @@
 
 #include "ui/common.h"
 
+#include "main.h"
+
 namespace DigiDAW::UI
 {
 	class Registry
 	{
+	private:
+		MainApplication* pApp;
 	public:
-		static void RegisterAllAssets();
+		Registry(MainApplication* pApp);
 	};
 }

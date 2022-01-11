@@ -1,3 +1,3 @@
-#include "mainwindow.h"
+#include "ui/mainwindow.h"
 
 

@@ -7,6 +7,26 @@ DigiDAW is a Digital Audio Workstation focused on being easy to use, free, and c
 
 **[CURRENTLY VERY WORK IN PROGRESS, FEATURES COULD BE COMPLETELY NON-EXISTENT, BUGGY, OR BROKEN. PLEASE BE ADVISED]**
 
+### Supported Audio Backends
+
+Thanks to the [rtaudio library](https://github.com/thestk/rtaudio), DigiDAW supports a variety of Audio Backends.
+
+#### Windows
+
+- ASIO
+- DirectSound
+- WASAPI
+
+#### Linux
+
+- Jack
+- ALSA
+- PulseAudio
+
+#### MacOS
+
+- Core Audio
+
 ## Dependencies
 
 ### Common
@@ -18,6 +38,7 @@ The common dependencies between all platforms are
 ### Linux
 
 - GTK3
+- (Audio Backends) Jack/ALSA/PulseAudio
 
 ## Building
 
@@ -79,6 +100,15 @@ You can opt to put an export command in your bashrc, or simply just export the S
 To install GTK3 on apt based distros, run the command ```sudo apt install libgtk-3-dev```
 
 For pacman based distros, run the command ```sudo pacman -S gtk3```
+
+#### Audio Backend
+
+You can install the dev libraries for any number of backends, you can lookup which packages you need to install for your distro.
+
+On pacman/apt based distros these are the packages to install (you can pick and choose which backends you want):
+- ALSA ```sudo apt install libasound2-dev``` ```sudo pacman -S alsa-lib```
+- Jack ```sudo apt install libjack-jackd2-dev``` ```sudo pacman -S jack2```
+- PulseAudio ```sudo apt install libpulse-dev``` ```sudo pacman -S libpulse```
 
 #### CMake
 

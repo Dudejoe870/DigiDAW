@@ -7,7 +7,7 @@ export class StatusBar extends Element {
 
     render() {
         return <section styleset={__DIR__ + "statusbar.css#bar"}>
-            Here goes your status
+            { DigiDAW.getStatusMessage() }
         </section>;
     }
 }

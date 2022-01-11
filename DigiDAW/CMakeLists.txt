@@ -1,23 +1,59 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
-# TODO: Make this cross-platform (should be relatively easy, but I'm going to start working on the main project now.)
-add_executable (DigiDAW WIN32 "src/main.cpp" "src/resources.cpp")
-target_sources(DigiDAW PRIVATE "$ENV{SCITERSDK}/include/sciter-win-main.cpp")
+# Get all subdirectories recursively.
+macro(subdirlist result curdir)
+    file(GLOB_RECURSE children LIST_DIRECTORIES true RELATIVE ${curdir} ${curdir}/*)
+    set(dirlist "")
+    foreach(child ${children})
+        if(IS_DIRECTORY ${curdir}/${child})
+            list(APPEND dirlist ${curdir}/${child})
+        endif()
+    endforeach()
+    set(${result} ${dirlist})
+endmacro()
+
+add_executable (DigiDAW "src/ui/uimain.cpp" "src/ui/resources.cpp" "src/ui/mainwindow.cpp" "src/ui/mainwindow.h" "src/ui/common.h" "src/ui/digidaw.h" "src/ui/registry.h" "src/ui/registry.cpp" "src/ui/digidaw.cpp")
+
+set_property(TARGET DigiDAW PROPERTY CXX_STANDARD 20)
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" OR ${CMAKE_SYSTEM_NAME} MATCHES "CYGWIN_NT*" OR ${CMAKE_SYSTEM_NAME} MATCHES "MSYS_NT*")
+    set_property(TARGET DigiDAW PROPERTY WIN32_EXECUTABLE TRUE)
+    target_sources(DigiDAW PRIVATE "$ENV{SCITERSDK}/include/sciter-win-main.cpp")
+    set(LIB_DIRECTORY "windows")
+    set(EXE_EXT ".exe")
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    target_sources(DigiDAW PRIVATE "$ENV{SCITERSDK}/include/sciter-gtk-main.cpp")
+    set(LIB_DIRECTORY "linux")
+
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+
+    target_compile_options(DigiDAW PRIVATE ${GTK3_CFLAGS_OTHER})
+    target_include_directories(DigiDAW PRIVATE ${GTK3_INCLUDE_DIRS})
+    target_link_directories(DigiDAW PRIVATE ${GTK3_LIBRARY_DIRS})
+    target_link_libraries(DigiDAW ${GTK3_LIBRARIES} dl)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    target_sources(DigiDAW PRIVATE "$ENV{SCITERSDK}/include/sciter-osx-main.mm")
+    set(LIB_DIRECTORY "macosx")
+endif()
 
 target_link_libraries(DigiDAW rtaudio)
 
 target_include_directories(DigiDAW PRIVATE "$ENV{SCITERSDK}/include" "src" "${CMAKE_CURRENT_SOURCE_DIR}../rtaudio")
+
+subdirlist(UI_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ui)
 add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/src/resources.cpp
-  COMMAND $ENV{SCITERSDK}/bin/windows/packfolder.exe ui src/resources.cpp -v "resources"
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ui ${CMAKE_CURRENT_SOURCE_DIR}/ui/statusbar ${CMAKE_CURRENT_SOURCE_DIR}/ui/menubar
+  OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/resources.cpp
+  COMMAND "$ENV{SCITERSDK}/bin/${LIB_DIRECTORY}/packfolder${EXE_EXT}" ui src/ui/resources.cpp -v "resources"
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ui ${UI_DIRS}
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   VERBATIM
   COMMENT "Packing Resources into resources.cpp..."
 )
+
+# TODO: copy the libraries from the sciter SDK and not from the source tree (and remove the libraries from the source tree)
 add_custom_command(
     TARGET DigiDAW POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/lib/windows" $<TARGET_FILE_DIR:DigiDAW>
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/lib/${LIB_DIRECTORY}" $<TARGET_FILE_DIR:DigiDAW>
     VERBATIM
 )
-set_property(TARGET DigiDAW PROPERTY CXX_STANDARD 20)

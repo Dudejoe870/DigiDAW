@@ -1,5 +1,5 @@
-import { MenuBar } from "menubar/menubar.js";
-import { StatusBar } from "statusbar/statusbar.js";
+import { MenuBar } from "components/menubar/menubar.js";
+import { StatusBar } from "components/statusbar/statusbar.js";
 
 export class Application extends Element {
     render() {

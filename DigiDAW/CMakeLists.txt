@@ -19,11 +19,17 @@ set_property(TARGET DigiDAW PROPERTY CXX_STANDARD 20)
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" OR ${CMAKE_SYSTEM_NAME} MATCHES "CYGWIN_NT*" OR ${CMAKE_SYSTEM_NAME} MATCHES "MSYS_NT*")
     set_property(TARGET DigiDAW PROPERTY WIN32_EXECUTABLE TRUE)
     target_sources(DigiDAW PRIVATE "$ENV{SCITERSDK}/include/sciter-win-main.cpp")
-    set(LIB_DIRECTORY "windows")
+
+    set(SCITER_PLATFORM_DIRECTORY "windows")
+    set(SCITER_LIB_DIRECTORY "x64")
+    set(SCITER_LIB_NAME "sciter.dll")
     set(EXE_EXT ".exe")
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     target_sources(DigiDAW PRIVATE "$ENV{SCITERSDK}/include/sciter-gtk-main.cpp")
-    set(LIB_DIRECTORY "linux")
+
+    set(SCITER_PLATFORM_DIRECTORY "linux")
+    set(SCITER_LIB_DIRECTORY "x64")
+    set(SCITER_LIB_NAME "libsciter-gtk.so")
 
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
@@ -34,7 +40,10 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     target_link_libraries(DigiDAW ${GTK3_LIBRARIES} dl)
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     target_sources(DigiDAW PRIVATE "$ENV{SCITERSDK}/include/sciter-osx-main.mm")
-    set(LIB_DIRECTORY "macosx")
+
+    set(SCITER_PLATFORM_DIRECTORY "macosx")
+    set(SCITER_LIB_DIRECTORY ".")
+    set(SCITER_LIB_NAME "libsciter.dylib")
 endif()
 
 target_link_libraries(DigiDAW rtaudio)
@@ -44,16 +53,15 @@ target_include_directories(DigiDAW PRIVATE "$ENV{SCITERSDK}/include" "src" "${CM
 subdirlist(UI_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ui)
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/resources.cpp
-  COMMAND "$ENV{SCITERSDK}/bin/${LIB_DIRECTORY}/packfolder${EXE_EXT}" ui src/ui/resources.cpp -v "resources"
+  COMMAND "$ENV{SCITERSDK}/bin/${SCITER_PLATFORM_DIRECTORY}/packfolder${EXE_EXT}" ui src/ui/resources.cpp -v "resources"
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ui ${UI_DIRS}
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   VERBATIM
   COMMENT "Packing Resources into resources.cpp..."
 )
 
-# TODO: copy the libraries from the sciter SDK and not from the source tree (and remove the libraries from the source tree)
 add_custom_command(
     TARGET DigiDAW POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/lib/${LIB_DIRECTORY}" $<TARGET_FILE_DIR:DigiDAW>
+    COMMAND ${CMAKE_COMMAND} -E copy "$ENV{SCITERSDK}/bin/${SCITER_PLATFORM_DIRECTORY}/${SCITER_LIB_DIRECTORY}/${SCITER_LIB_NAME}" $<TARGET_FILE_DIR:DigiDAW>
     VERBATIM
 )

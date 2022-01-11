@@ -11,6 +11,6 @@ endif()
 set(RTAUDIO_BUILD_TESTING OFF)
 set(RTAUDIO_BUILD_SHARED_LIBS OFF)
 set(RTAUDIO_BUILD_STATIC_LIBS ON)
-add_subdirectory ("rtaudio")
+add_subdirectory ("rtaudio" EXCLUDE_FROM_ALL)
 
 add_subdirectory ("DigiDAW")

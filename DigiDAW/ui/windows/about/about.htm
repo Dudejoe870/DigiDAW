@@ -1,7 +1,12 @@
-<html theme="dark">
+<html lang="en" theme="dark">
 <head>
     <style src="../../theme.css" />
     <style src="../../main.css" />
+
+    <style>
+        @import url(../../langs.css);
+    </style>
+
     <title>DigiDAW - About</title>
 
     <script>
@@ -12,16 +17,16 @@
 <body style="overflow-y: auto;">
     <section style="width: *; height: *; vertical-align: top; text-align: center; margin: 0; padding: 0; margin-bottom: 32px; margin-left: 32px;">
         <h1 style="padding: 0; margin: 0;">DigiDAW</h1>
-        <h2 style="padding: 0; margin: 0;">About Section</h2>
+        <h2 style="padding: 0; margin: 0;" class="lang-AboutSection"></h2>
         <hr style="margin-right: 32px;" />
         <p style="text-align: left; padding: 0; margin: 0;">
-            DigiDAW is a Digital Audio Workstation focused on being easy to use, free, and completely open-source.<br>
+            <span class="lang-AboutText"></span><br>
             <br>
-            <b style="color: #b74040">[CURRENTLY VERY WORK IN PROGRESS, FEATURES COULD BE COMPLETELY NON-EXISTENT, BUGGY, OR BROKEN. PLEASE BE ADVISED]</b>
+            <b style="color: #b74040" class="lang-AboutWIP"></b>
         </p>
         <br>
-        <h3 style="padding: 0; margin: 0;">Copyright Notices</h3>
-        DigiDAW License: <br>
+        <h3 style="padding: 0; margin: 0;" class="lang-AboutCopyNotice"></h3>
+        <span class="lang-AboutLicense"></span><br>
         <hr style="margin-right: 32px;" />
         <section style="text-align: left; font-size: 12px; font-weight: bold;">
             Copyright &copy; 2022 John Henry Clemis<br>
@@ -44,7 +49,7 @@
             OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE<br>
             SOFTWARE.<br>
         </section>
-        Sciter.JS License:<br>
+        <span class="lang-AboutSciterLicense"></span><br>
         <hr style="margin-right: 32px;" />
         <section style="text-align: left; font-size: 12px; font-weight: bold;">
             BSD 3-Clause License<br>

@@ -28,16 +28,16 @@ export class Settings extends Element {
 
     getAudioEnginePage() {
         return <section style="flow: vertical; height: *; width: *; margin: 32px; margin-top: 0; margin-bottom: 0; padding: 0; text-align: center;">
-            <h1>Audio Engine Settings</h1>
+            <h1 class="lang-AudioEngineSettings"></h1>
             <section style="flow: vertical; text-align: center; horizontal-align: center; width: *;">
                 <div>
-                    <label>API Backend</label>
+                    <label class="lang-SettingsAPIBackend"></label>
                     <select type="dropdown" id="api-dropdown" state-html={ this.getAPIDropdown() }>
                     </select>
                 </div>
                 <hr />
 
-                <h2>Devices</h2>
+                <h2 class="lang-Devices"></h2>
 
             </section>
         </section>;
@@ -53,8 +53,7 @@ export class Settings extends Element {
         else if (this.currentPage == this.Pages.MidiEngine)
             return this.midiEnginePage;
         else
-            return <section style="flow: vertical; height: *; vertical-align: middle; text-align: center; color: var(disabled-text)">
-                Select an option on the side to view the relevant settings.
+            return <section style="flow: vertical; height: *; vertical-align: middle; text-align: center; color: var(disabled-text)" class="lang-SettingsSelectOption">
             </section>;
     }
 
@@ -62,8 +61,8 @@ export class Settings extends Element {
         return <body styleset={__DIR__ + "settings.css#settings"}>
             <main>
                 <ul>
-                    <li id="audio-button" class={ this.currentPage == this.Pages.AudioEngine ? "current-page" : "" }>Audio Engine</li>
-                    <li id="midi-button" class={ this.currentPage == this.Pages.MidiEngine ? "current-page" : "" }>Midi Engine</li>
+                    <li id="audio-button" class={ this.currentPage == this.Pages.AudioEngine ? "current-page lang-AudioEngine" : "lang-AudioEngine" }></li>
+                    <li id="midi-button" class={ this.currentPage == this.Pages.MidiEngine ? "current-page lang-MidiEngine" : "lang-MidiEngine" }></li>
                 </ul>
 
                 <section style="flow: vertical; width: *; height: *; overflow-y: auto; background-color: var(back);">

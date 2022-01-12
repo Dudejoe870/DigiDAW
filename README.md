@@ -7,23 +7,29 @@ DigiDAW is a Digital Audio Workstation focused on being easy to use, free, and c
 
 **[CURRENTLY VERY WORK IN PROGRESS, FEATURES COULD BE COMPLETELY NON-EXISTENT, BUGGY, OR BROKEN. PLEASE BE ADVISED]**
 
-### Supported Audio Backends
+## Supported Audio Backends
 
 Thanks to the [rtaudio library](https://github.com/thestk/rtaudio), DigiDAW supports a variety of Audio Backends.
 
-#### Windows
+#
+
+### Windows
 
 - ASIO
 - DirectSound
 - WASAPI
 
-#### Linux
+#
+
+### Linux
 
 - Jack
 - ALSA
 - PulseAudio
 
-#### MacOS
+#
+
+### MacOS
 
 - Core Audio
 
@@ -49,9 +55,9 @@ This section is about building DigiDAW. This is currently the only way of obtain
 
 Certain sections of the build instructions can be skipped if you're more experienced / already have a certain component installed.
 
-### Windows
+## Windows
 
-#### Git
+### Git
 
 To install Git for windows [click here](https://git-scm.com/download/win).
 Simply go through the installer step by step, the defaults should be fine.
@@ -60,7 +66,8 @@ To clone this repository, choose a new folder where you will store the resposito
 Run the command ```git clone https://github.com/Dudejoe870/DigiDAW.git --recursive ./```
 this will clone the git respository into the folder you opened the git bash in.
 
-#### Sciter SDK
+### Sciter SDK
+
 
 After downloading the Sciter SDK and extracting the ZIP somewhere, you must create a new SCITERSDK environment variable and set it to wherever the Sciter SDK is on your drive.
 
@@ -69,7 +76,7 @@ Click ``Environment Variables``.
 Then under the User variables list, click ``New``.
 Make the Variable name ``SCITERSDK``, the Variable value should be the folder path to wherever the Sciter SDK folder is on your drive.
 
-#### Visual Studio 2022
+### Visual Studio 2022
 
 The next thing you'll want is Visual Studio 2022 (Note: Visual Studio 2019 should also probably work if you'd rather use that, going back further than that however is unsupported), 
 to download that click [here](https://visualstudio.microsoft.com/downloads/).
@@ -79,29 +86,31 @@ you want to click the ``Open Local Folder`` button and navigate to where you clo
 
 Once you're here, you should simply be able to click the green arrow at the top of the screen to build and run the application.
 
-### Linux
+
+## Linux
+
 
 Linux building has been tested on Debian under Windows WSL.
 
-#### Git
+### Git
 
 If you're on Linux I'll assume you already know how to use a Terminal and navigate things.
 
 Go ahead and clone the repository: ```git clone https://github.com/Dudejoe870/DigiDAW.git --recursive ./```
 
-#### Sciter SDK
+### Sciter SDK
 
 After downloading the Sciter SDK and extracting the ZIP somewhere, you must create a new SCITERSDK environment variable and set it to wherever the Sciter SDK is on your drive.
 
 You can opt to put an export command in your bashrc, or simply just export the SCITERSDK enviornment variable before building.
 
-#### GTK3
+### GTK3
 
 To install GTK3 on apt based distros, run the command ```sudo apt install libgtk-3-dev```
 
 For pacman based distros, run the command ```sudo pacman -S gtk3```
 
-#### Audio Backend
+### Audio Backend
 
 You can install the dev libraries for any number of backends, you can lookup which packages you need to install for your distro.
 
@@ -110,7 +119,7 @@ On pacman/apt based distros these are the packages to install (you can pick and 
 - Jack ```sudo apt install libjack-jackd2-dev``` ```sudo pacman -S jack2```
 - PulseAudio ```sudo apt install libpulse-dev``` ```sudo pacman -S libpulse```
 
-#### CMake
+### CMake
 
 You'll need CMake to build this application.
 
@@ -118,18 +127,18 @@ For apt based distros it should be ```sudo apt install cmake```.
 
 Or for pacman ```sudo pacman -S cmake```.
 
-#### Other Build Tools
+### Other Build Tools
 
 g++ and make are also required, these will normally be pre-installed.
 
-#### Building the Application
+### Building the Application
 
 To build DigiDAW simply run ```cmake -S ./ -B out/build```
 then go inside the out/build folder and run ```make```.
 
 This should build the application. To run it simply go inside the DigiDAW folder inside the build folder and run DigiDAW.
 
-### MacOS (x86 only)
+## MacOS (x86 only)
 
 Unfortunately MacOS building hasn't been tested, it should be technically possible,
 but the steps to do so won't be discussed here.

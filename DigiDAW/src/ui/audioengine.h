@@ -23,13 +23,16 @@ namespace DigiDAW::UI
 
         void changeBackend(int api);
 
+        std::vector<sciter::value> queryDevices();
+
         SOM_PASSPORT_BEGIN(AudioEngine)
             SOM_FUNCS(
                 SOM_FUNC(getAPIEnum), 
                 SOM_FUNC(getAPIDisplayName), 
                 SOM_FUNC(getSupportedAPIs), 
                 SOM_FUNC(getCurrentAPI),
-                SOM_FUNC(changeBackend))
+                SOM_FUNC(changeBackend),
+                SOM_FUNC(queryDevices))
         SOM_PASSPORT_END
     };
 }

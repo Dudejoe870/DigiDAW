@@ -35,7 +35,8 @@ namespace DigiDAW::Audio
 
 	ReturnCode Engine::getDevices(std::vector<Engine::AudioDevice>& dest)
 	{
-		for (unsigned int i = 0; i < audioBackend->getDeviceCount(); ++i)
+		const int deviceCount = audioBackend->getDeviceCount();
+		for (unsigned int i = 0; i < deviceCount; ++i)
 			dest.push_back(Engine::AudioDevice(audioBackend->getDeviceInfo(i), audioBackend->getCurrentApi(), i));
 
 		return ReturnCode::Success;

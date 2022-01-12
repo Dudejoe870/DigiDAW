@@ -36,6 +36,9 @@ export class Settings extends Element {
                     </select>
                 </div>
                 <hr />
+
+                <h2>Devices</h2>
+
             </section>
         </section>;
     }

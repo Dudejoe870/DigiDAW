@@ -47,4 +47,34 @@ namespace DigiDAW::UI
 	{
 		pApp->audioEngine->changeBackend((RtAudio::Api)api);
 	}
+
+	std::vector<sciter::value> AudioEngine::queryDevices()
+	{
+		std::vector<Audio::Engine::AudioDevice> devices;
+		pApp->audioEngine->getDevices(devices);
+
+		std::vector<sciter::value> ret;
+		for (Audio::Engine::AudioDevice device : devices)
+		{
+			sciter::value jsDevice = sciter::value::make_map();
+
+			jsDevice.set_item("index", device.index);
+			jsDevice.set_item("api", (int)device.backend);
+			jsDevice.set_item("probed", device.info.probed);
+			jsDevice.set_item("name", device.info.name);
+			jsDevice.set_item("outputChannels", device.info.outputChannels);
+			jsDevice.set_item("inputChannels", device.info.inputChannels);
+			jsDevice.set_item("duplexChannels", device.info.duplexChannels);
+			jsDevice.set_item("isDefaultOutput", device.info.isDefaultOutput);
+			jsDevice.set_item("isDefaultInput", device.info.isDefaultInput);
+			jsDevice.set_item("sampleRates", device.info.sampleRates);
+			jsDevice.set_item("currentSampleRate", device.info.currentSampleRate);
+			jsDevice.set_item("preferredSampleRate", device.info.preferredSampleRate);
+			jsDevice.set_item("nativeFormats", (int)device.info.nativeFormats);
+
+			ret.push_back(jsDevice);
+		}
+
+		return ret;
+	}
 }

@@ -17,7 +17,7 @@ export class MenuBar extends Element {
             </li>
             <li>Edit
                 <menu>
-                    <li>Settings</li>
+                    <li id="settings-button">Settings</li>
                 </menu>
             </li>
             <li>Help
@@ -30,5 +30,9 @@ export class MenuBar extends Element {
 
     ["on click at #about-button"](event, button) {
         new Window({ url: "../../windows/about/about.htm", type: Window.TOOL_WINDOW, width: 620, height: 512 });
+    }
+
+    ["on click at #settings-button"](event, button) {
+        new Window({ url: "../../windows/settings/settings.htm", type: Window.FRAME_WINDOW });
     }
 }

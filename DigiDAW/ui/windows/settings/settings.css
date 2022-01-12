@@ -1,0 +1,31 @@
+@set settings {
+    ul {
+        flow: vertical;
+        width: 256px;
+        height: *;
+        overflow: hidden;
+        background-color: var(panel-back);
+        margin: 0;
+        padding: 0;
+    }
+
+    ul > li {
+        background-color: var(button-back);
+        width: *;
+        margin: 0;
+        display: block;
+        white-space: nowrap;
+        color: var(panel-text);
+        text-align: center;
+        font-size: 20px;
+        font-weight: lighter;
+    }
+
+    ul > li:hover {
+        background-color: var(hover-option-cover);
+    }
+
+    ul > li.current-page {
+        background-color: var(button-pressed-back);
+    }
+}

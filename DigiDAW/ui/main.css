@@ -13,3 +13,9 @@ main {
 main > section {
     height: *;
 }
+
+label {
+    display: inline-block;
+    white-space: pre;
+    width: 10em;
+}

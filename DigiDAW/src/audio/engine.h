@@ -8,6 +8,8 @@ namespace DigiDAW::Audio
 	{
 	private:
 		std::unique_ptr<RtAudio> audioBackend;
+
+		std::vector<RtAudio::Api> supportedAPIs;
 	public:
 		struct AudioDevice
 		{
@@ -27,11 +29,14 @@ namespace DigiDAW::Audio
 		~Engine();
 
 		ReturnCode getSupportedAPIs(std::vector<RtAudio::Api>& dest);
+		ReturnCode getCurrentAPI(RtAudio::Api& api);
+
 		ReturnCode changeBackend(RtAudio::Api api);
 
 		ReturnCode getDevices(std::vector<AudioDevice>& dest);
 
-
+		ReturnCode getAPIDisplayName(RtAudio::Api api, std::string& dest);
+		ReturnCode getAPIName(RtAudio::Api api, std::string& dest);
 
 		ReturnCode stopEngine();
 	};

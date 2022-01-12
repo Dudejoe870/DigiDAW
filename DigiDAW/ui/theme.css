@@ -10,15 +10,15 @@ html:theme(dark) {
   var(accent): morph(window-accent-color,lightness:40%);  
   var(accent-text): highlighttext;  
 
-  var(panel-back): #383838; //#3f3834;
+  var(panel-back): #383838;
   var(popup-panel-back): #444; 
   var(panel-text): #eee;
   var(back): #2b2b2b;
   var(text): #fff;
-  var(border): #333;
+  var(border): #444;
   var(button-back):  #555;
   var(button-pressed-back):#444;  
-  var(hover-border): #eee;
+  var(hover-border): #555;
   var(disabled-text): #888;
   var(disabled-back): #444;
   var(hover-option-cover): rgba(255,255,255,0.1);

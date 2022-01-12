@@ -49,7 +49,6 @@
         margin:0;  
         padding:1px;
         max-width:max-intrinsic;
-        /*min-width: max-intrinsic;*/
         border:1px solid var(border);
         background-color: var(popup-panel-back);
         color: var(panel-text);
@@ -88,7 +87,7 @@
     }
 
 
-    menu li:disabled { color:graytext; foreground-image: none; }
+    menu li:disabled { color:var(disabled-text); foreground-image: none; }
 
     /* accesskey label (span) */
     menu li span.accesskey
@@ -103,7 +102,7 @@
 
     menu li:current span.accesskey
     {
-    color:#FFD700;
+        color:#FFD700;
     }
 
 
@@ -128,8 +127,6 @@
     menu li:current
     { 
         background-color:var(hover-option-cover); 
-        //border-radius:3px;
-        //background:url(theme:list-view-item-selected) stretch;
     }
 
     /* menu separator */
@@ -170,6 +167,6 @@
     }
     menu li[type="check"]:disabled
     { 
-        fill:grey;  
+        fill:var(disabled-back);  
     }
 }

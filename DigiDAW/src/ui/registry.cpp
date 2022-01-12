@@ -1,6 +1,7 @@
 #include "ui/registry.h"
 
 #include "ui/digidaw.h"
+#include "ui/audioengine.h"
 
 namespace DigiDAW::UI
 {
@@ -9,5 +10,6 @@ namespace DigiDAW::UI
 		this->pApp = pApp;
 
 		SciterSetGlobalAsset(new DigiDAW());
+		SciterSetGlobalAsset(new AudioEngine(pApp));
 	}
 }

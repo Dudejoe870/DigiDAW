@@ -73,4 +73,14 @@ namespace DigiDAW::UI
 
 		return ret;
 	}
+
+	std::vector<int> AudioEngine::getSupportedSampleRates()
+	{
+		std::vector<unsigned int> supportedSampleRates;
+		pApp->audioEngine->getSupportedSampleRates(supportedSampleRates);
+
+		std::vector<int> ret;
+		for (unsigned int rate : supportedSampleRates) ret.push_back((int)rate);
+		return ret;
+	}
 }

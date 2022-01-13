@@ -8,6 +8,10 @@ using namespace DigiDAW::UI;
 
 int uimain(std::function<int()> run) 
 {
+#ifdef _DEBUG
+    sciter::debug_output_console _;
+#endif
+
     DigiDAW::MainApplication app;
 
     sciter::om::hasset<MainWindow> pwin = new MainWindow();

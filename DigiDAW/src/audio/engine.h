@@ -6,13 +6,6 @@ namespace DigiDAW::Audio
 {
 	class Engine
 	{
-	private:
-		std::unique_ptr<RtAudio> audioBackend;
-
-		std::vector<RtAudio::Api> supportedAPIs;
-
-		unsigned int currentOutputDevice;
-		unsigned int currentInputDevice;
 	public:
 		struct AudioDevice
 		{
@@ -26,8 +19,29 @@ namespace DigiDAW::Audio
 				this->backend = backend;
 				this->index = index;
 			}
-		};
 
+			AudioDevice()
+			{
+				this->info = RtAudio::DeviceInfo();
+				this->backend = RtAudio::Api::UNSPECIFIED;
+				this->index = -1;
+			}
+		};
+	private:
+		std::unique_ptr<RtAudio> audioBackend;
+
+		std::vector<RtAudio::Api> supportedAPIs;
+
+		std::vector<AudioDevice> currentDevices;
+
+		unsigned int currentOutputDevice;
+		unsigned int currentInputDevice;
+		unsigned int currentSampleRate;
+
+		void resetSampleRate();
+		AudioDevice getAudioDevice(unsigned int index);
+		void updateDevices();
+	public:
 		Engine(RtAudio::Api api);
 		~Engine();
 
@@ -46,6 +60,11 @@ namespace DigiDAW::Audio
 
 		ReturnCode getCurrentOutputDevice(unsigned int& device);
 		ReturnCode getCurrentInputDevice(unsigned int& device);
+
+		ReturnCode setCurrentSampleRate(unsigned int sampleRate);
+		ReturnCode getCurrentSampleRate(unsigned int& sampleRate);
+
+		ReturnCode getSupportedSampleRates(std::vector<unsigned int>& sampleRates);
 
 		ReturnCode stopEngine();
 	};

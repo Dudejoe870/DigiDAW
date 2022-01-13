@@ -15,8 +15,12 @@ namespace DigiDAW::Audio
 			if (testAudio.getDeviceCount() > 0) supportedAPIs.push_back(api);
 		}
 
+		updateDevices();
+
 		currentOutputDevice = audioBackend->getDefaultOutputDevice();
 		currentInputDevice = audioBackend->getDefaultInputDevice();
+
+		resetSampleRate();
 	}
 
 	Engine::~Engine()
@@ -36,12 +40,16 @@ namespace DigiDAW::Audio
 		return ReturnCode::Success;
 	}
 
+	void Engine::updateDevices()
+	{
+		currentDevices.clear();
+		for (unsigned int i = 0; i < audioBackend->getDeviceCount(); ++i)
+			currentDevices.push_back(getAudioDevice(i));
+	}
+
 	ReturnCode Engine::getDevices(std::vector<Engine::AudioDevice>& dest)
 	{
-		const unsigned int deviceCount = audioBackend->getDeviceCount();
-		for (unsigned int i = 0; i < deviceCount; ++i)
-			dest.push_back(Engine::AudioDevice(audioBackend->getDeviceInfo(i), audioBackend->getCurrentApi(), i));
-
+		dest = currentDevices;
 		return ReturnCode::Success;
 	}
 
@@ -57,10 +65,59 @@ namespace DigiDAW::Audio
 		return ReturnCode::Success;
 	}
 
+	Engine::AudioDevice Engine::getAudioDevice(unsigned int index)
+	{
+		return Engine::AudioDevice(audioBackend->getDeviceInfo(index), audioBackend->getCurrentApi(), index);
+	}
+
+	void Engine::resetSampleRate()
+	{
+		unsigned int bestSampleRate = 0;
+
+		RtAudio::DeviceInfo outputInfo = currentDevices[currentOutputDevice].info;
+		RtAudio::DeviceInfo inputInfo = currentDevices[currentInputDevice].info;
+
+		if (!outputInfo.probed || !inputInfo.probed)
+		{
+			currentSampleRate = 0;
+			return;
+		}
+
+		// As an optimization, use the smaller of the two sample rate lists for the outer loop.
+		std::vector<unsigned int>& rates1 =
+			outputInfo.sampleRates.size() < inputInfo.sampleRates.size() ? outputInfo.sampleRates : inputInfo.sampleRates;
+		std::vector<unsigned int>& rates2 =
+			rates1 == outputInfo.sampleRates ? inputInfo.sampleRates : outputInfo.sampleRates;
+
+		for (unsigned int rate1 : rates1)
+		{
+			for (unsigned int rate2 : rates2)
+			{
+				if (rate1 == rate2)
+				{
+					if (rate1 > bestSampleRate) bestSampleRate = rate1;
+					break;
+				}
+			}
+		}
+
+		setCurrentSampleRate(bestSampleRate);
+	}
+
 	ReturnCode Engine::setCurrentOutputDevice(unsigned int device)
 	{
 		stopEngine();
+
+		unsigned int previousDevice = currentOutputDevice;
 		currentOutputDevice = device;
+		if (!currentDevices[currentOutputDevice].info.probed)
+		{
+			currentOutputDevice = previousDevice;
+			return ReturnCode::Error;
+		}
+
+		resetSampleRate();
+
 		// TODO: Reopen the stream with the new output device if we already had one open before.
 		return ReturnCode::Success;
 	}
@@ -68,7 +125,17 @@ namespace DigiDAW::Audio
 	ReturnCode Engine::setCurrentInputDevice(unsigned int device)
 	{
 		stopEngine();
+
+		unsigned int previousDevice = currentInputDevice;
 		currentInputDevice = device;
+		if (!currentDevices[currentInputDevice].info.probed)
+		{
+			currentInputDevice = previousDevice;
+			return ReturnCode::Error;
+		}
+
+		resetSampleRate();
+
 		// TODO: Reopen the stream with the new input device if we already had one open before.
 		return ReturnCode::Success;
 	}
@@ -85,6 +152,53 @@ namespace DigiDAW::Audio
 		return ReturnCode::Success;
 	}
 
+	ReturnCode Engine::setCurrentSampleRate(unsigned int sampleRate)
+	{
+		stopEngine();
+		currentSampleRate = sampleRate;
+
+		// TODO: Reopen the stream with the new sample rate if we already had one open before.
+		return ReturnCode::Success;
+	}
+
+	ReturnCode Engine::getCurrentSampleRate(unsigned int& sampleRate)
+	{
+		sampleRate = currentSampleRate;
+		return ReturnCode::Success;
+	}
+
+	ReturnCode Engine::getSupportedSampleRates(std::vector<unsigned int>& sampleRates)
+	{
+		RtAudio::DeviceInfo outputInfo = currentDevices[currentOutputDevice].info;
+		RtAudio::DeviceInfo inputInfo = currentDevices[currentInputDevice].info;
+
+		if (!outputInfo.probed || !inputInfo.probed)
+		{
+			sampleRates.clear();
+			return ReturnCode::Error;
+		}
+
+		// As an optimization, use the smaller of the two sample rate lists for the outer loop.
+		std::vector<unsigned int>& rates1 = 
+			outputInfo.sampleRates.size() < inputInfo.sampleRates.size() ? outputInfo.sampleRates : inputInfo.sampleRates;
+		std::vector<unsigned int>& rates2 = 
+			rates1 == outputInfo.sampleRates ? inputInfo.sampleRates : outputInfo.sampleRates;
+
+		for (unsigned int rate1 : rates1)
+		{
+			for (unsigned int rate2 : rates2)
+			{
+				if (rate1 == rate2)
+				{
+					sampleRates.push_back(rate1);
+					break;
+				}
+			}
+		}
+
+		return ReturnCode::Success;
+	}
+
 	ReturnCode Engine::changeBackend(RtAudio::Api api)
 	{
 		stopEngine();
@@ -92,8 +206,12 @@ namespace DigiDAW::Audio
 
 		audioBackend = std::make_unique<RtAudio>(api);
 
+		updateDevices();
+
 		currentOutputDevice = audioBackend->getDefaultOutputDevice();
 		currentInputDevice = audioBackend->getDefaultInputDevice();
+
+		resetSampleRate();
 
 		return ReturnCode::Success;
 	}

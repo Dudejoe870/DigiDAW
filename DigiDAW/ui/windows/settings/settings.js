@@ -6,6 +6,7 @@ export class Settings extends Element {
     supportedAPIs = [];
 
     devices = [];
+    supportedSampleRates = [];
 
     Pages = Object.freeze({
         AudioEngine: 0,
@@ -32,7 +33,7 @@ export class Settings extends Element {
         var ret = "";
 
         for (const device of this.devices) {
-            if (device.probed && device.outputChannels > 0) {
+            if (device.outputChannels > 0) {
                 ret += `<option class="device-${device.index}" ${device.index == AudioEngine.outputDevice ? "selected" : ""}>${device.name}</option>`;
             }
         }
@@ -44,8 +45,20 @@ export class Settings extends Element {
         var ret = "";
 
         for (const device of this.devices) {
-            if (device.probed && device.inputChannels > 0) {
+            if (device.inputChannels > 0) {
                 ret += `<option class="device-${device.index}" ${device.index == AudioEngine.inputDevice ? "selected" : ""}>${device.name}</option>`;
+            }
+        }
+
+        return ret;
+    }
+
+    getSampleRateDropdown() {
+        var ret = "";
+
+        if (this.devices[AudioEngine.outputDevice].probed && this.devices[AudioEngine.inputDevice].probed) {
+            for (const rate of this.supportedSampleRates) {
+                ret += `<option ${rate == AudioEngine.sampleRate ? "selected" : ""}>${rate}</option>`;
             }
         }
 
@@ -54,6 +67,7 @@ export class Settings extends Element {
 
     getAudioEnginePage() {
         this.devices = AudioEngine.queryDevices();
+        this.supportedSampleRates = AudioEngine.getSupportedSampleRates();
 
         return <section style="flow: vertical; height: *; width: *; margin: 32px; margin-top: 0; margin-bottom: 0; padding: 0; text-align: center;">
             <h1 class="lang-AudioEngineSettings"></h1>
@@ -63,10 +77,9 @@ export class Settings extends Element {
                     <select type="dropdown" id="api-dropdown" state-html={ this.getAPIDropdown() }>
                     </select>
                 </div>
+
                 <hr />
-
                 <h2 class="lang-DeviceSettings"></h2>
-
                 <div>
                     <label class="lang-SettingsOutputDevice"></label>
                     <select type="dropdown" id="output-dropdown" state-html={ this.getOutputDeviceDropdown() }>
@@ -76,6 +89,14 @@ export class Settings extends Element {
                 <div>
                     <label class="lang-SettingsInputDevice"></label>
                     <select type="dropdown" id="input-dropdown" state-html={ this.getInputDeviceDropdown() }>
+                    </select>
+                </div>
+                <br />
+                <hr />
+
+                <div>
+                    <label class="lang-SettingsSampleRate"></label>
+                    <select type="dropdown" id="samplerate-dropdown" state-html={ this.getSampleRateDropdown() }>
                     </select>
                 </div>
             </section>
@@ -129,14 +150,29 @@ export class Settings extends Element {
     ["on change at #output-dropdown"](event, dropdown) {
         var option = dropdown.$("option:current");
         var deviceNum = parseInt(option.className.substring(7)); // Get the Device number ID from the class of the current selected option.
+
         AudioEngine.outputDevice = deviceNum;
+        this.supportedSampleRates = AudioEngine.getSupportedSampleRates();
+
         this.patch(this.render());
     }
 
     ["on change at #input-dropdown"](event, dropdown) {
         var option = dropdown.$("option:current");
         var deviceNum = parseInt(option.className.substring(7));
+
         AudioEngine.inputDevice = deviceNum;
+        this.supportedSampleRates = AudioEngine.getSupportedSampleRates();
+
+        this.patch(this.render());
+    }
+
+    ["on change at #samplerate-dropdown"](event, dropdown) {
+        var option = dropdown.$("option:current");
+        var samplerate = parseInt(option.innerText);
+
+        AudioEngine.sampleRate = samplerate;
+
         this.patch(this.render());
     }
 }

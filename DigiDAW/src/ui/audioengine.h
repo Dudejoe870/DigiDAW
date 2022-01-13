@@ -38,6 +38,19 @@ namespace DigiDAW::UI
             pApp->audioEngine->getCurrentInputDevice(ret);
             return (int)ret;
         }
+
+        bool setSampleRate(int rate)
+        {
+            pApp->audioEngine->setCurrentSampleRate((unsigned int)rate);
+            return true;
+        }
+
+        int getSampleRate()
+        {
+            unsigned int ret;
+            pApp->audioEngine->getCurrentSampleRate(ret);
+            return (int)ret;
+        }
     public:
         AudioEngine(MainApplication* pApp);
 
@@ -50,17 +63,21 @@ namespace DigiDAW::UI
 
         std::vector<sciter::value> queryDevices();
 
+        std::vector<int> getSupportedSampleRates();
+
         SOM_PASSPORT_BEGIN(AudioEngine)
             SOM_FUNCS(
                 SOM_FUNC(getAPIDisplayName), 
                 SOM_FUNC(getSupportedAPIs), 
                 SOM_FUNC(getCurrentAPI),
                 SOM_FUNC(changeBackend),
-                SOM_FUNC(queryDevices))
+                SOM_FUNC(queryDevices),
+                SOM_FUNC(getSupportedSampleRates))
             SOM_PROPS(
                 SOM_RO_PROP(audioFormats),
                 SOM_VIRTUAL_PROP(outputDevice, getOutputDevice, setOutputDevice),
-                SOM_VIRTUAL_PROP(inputDevice, getInputDevice, setInputDevice))
+                SOM_VIRTUAL_PROP(inputDevice, getInputDevice, setInputDevice),
+                SOM_VIRTUAL_PROP(sampleRate, getSampleRate, setSampleRate))
         SOM_PASSPORT_END
     };
 }

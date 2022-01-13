@@ -13,7 +13,6 @@
 
 .lang-AudioEngine:lang(en) { content: "Audio Engine"; }
 .lang-MidiEngine:lang(en) { content: "MIDI Engine"; }
-.lang-Devices:lang(en) { content: "Devices"; }
 
 .lang-AboutSection:lang(en) { content: "About Section"; }
 .lang-AboutText:lang(en) { content: "DigiDAW is a Digital Audio Workstation focused on being easy to use, free, and completely open-source."; }
@@ -26,4 +25,7 @@
 .lang-AudioEngineSettings:lang(en) { content: "Audio Engine Settings"; }
 .lang-MidiEngineSettings:lang(en) { content: "MIDI Engine Settings"; }
 .lang-SettingsAPIBackend:lang(en) { content: "API Backend"; }
+.lang-SettingsOutputDevice:lang(en) { content: "Output Device"; }
+.lang-SettingsInputDevice:lang(en) { content: "Input Device"; }
 .lang-SettingsSelectOption:lang(en) { content: "Select an Option on the side to view the relevant options."; }
+.lang-DeviceSettings:lang(en) { content: "Device Settings"; }

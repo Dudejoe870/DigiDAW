@@ -11,11 +11,36 @@ namespace DigiDAW::UI
     private:
         MainApplication* pApp;
 
-        std::vector<sciter::astring> apiMapping;
+        sciter::value audioFormats;
+
+        bool setOutputDevice(int device)
+        {
+            pApp->audioEngine->setCurrentOutputDevice((unsigned int)device);
+            return true;
+        }
+
+        int getOutputDevice()
+        {
+            unsigned int ret;
+            pApp->audioEngine->getCurrentOutputDevice(ret);
+            return (int)ret;
+        }
+
+        bool setInputDevice(int device)
+        {
+            pApp->audioEngine->setCurrentInputDevice((unsigned int)device);
+            return true;
+        }
+
+        int getInputDevice()
+        {
+            unsigned int ret;
+            pApp->audioEngine->getCurrentInputDevice(ret);
+            return (int)ret;
+        }
     public:
         AudioEngine(MainApplication* pApp);
 
-        std::vector<sciter::astring> getAPIEnum();
         sciter::astring getAPIDisplayName(int api);
 
         std::vector<int> getSupportedAPIs();
@@ -27,12 +52,15 @@ namespace DigiDAW::UI
 
         SOM_PASSPORT_BEGIN(AudioEngine)
             SOM_FUNCS(
-                SOM_FUNC(getAPIEnum), 
                 SOM_FUNC(getAPIDisplayName), 
                 SOM_FUNC(getSupportedAPIs), 
                 SOM_FUNC(getCurrentAPI),
                 SOM_FUNC(changeBackend),
                 SOM_FUNC(queryDevices))
+            SOM_PROPS(
+                SOM_RO_PROP(audioFormats),
+                SOM_VIRTUAL_PROP(outputDevice, getOutputDevice, setOutputDevice),
+                SOM_VIRTUAL_PROP(inputDevice, getInputDevice, setInputDevice))
         SOM_PASSPORT_END
     };
 }

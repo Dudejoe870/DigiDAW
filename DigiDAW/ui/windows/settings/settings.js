@@ -5,6 +5,8 @@ export class Settings extends Element {
 
     supportedAPIs = [];
 
+    devices = [];
+
     Pages = Object.freeze({
         AudioEngine: 0,
         MidiEngine: 1
@@ -26,7 +28,33 @@ export class Settings extends Element {
         return ret;
     }
 
+    getOutputDeviceDropdown() {
+        var ret = "";
+
+        for (const device of this.devices) {
+            if (device.probed && device.outputChannels > 0) {
+                ret += `<option class="device-${device.index}" ${device.index == AudioEngine.outputDevice ? "selected" : ""}>${device.name}</option>`;
+            }
+        }
+
+        return ret;
+    }
+
+    getInputDeviceDropdown() {
+        var ret = "";
+
+        for (const device of this.devices) {
+            if (device.probed && device.inputChannels > 0) {
+                ret += `<option class="device-${device.index}" ${device.index == AudioEngine.inputDevice ? "selected" : ""}>${device.name}</option>`;
+            }
+        }
+
+        return ret;
+    }
+
     getAudioEnginePage() {
+        this.devices = AudioEngine.queryDevices();
+
         return <section style="flow: vertical; height: *; width: *; margin: 32px; margin-top: 0; margin-bottom: 0; padding: 0; text-align: center;">
             <h1 class="lang-AudioEngineSettings"></h1>
             <section style="flow: vertical; text-align: center; horizontal-align: center; width: *;">
@@ -37,8 +65,19 @@ export class Settings extends Element {
                 </div>
                 <hr />
 
-                <h2 class="lang-Devices"></h2>
+                <h2 class="lang-DeviceSettings"></h2>
 
+                <div>
+                    <label class="lang-SettingsOutputDevice"></label>
+                    <select type="dropdown" id="output-dropdown" state-html={ this.getOutputDeviceDropdown() }>
+                     </select>
+                </div>
+                
+                <div>
+                    <label class="lang-SettingsInputDevice"></label>
+                    <select type="dropdown" id="input-dropdown" state-html={ this.getInputDeviceDropdown() }>
+                    </select>
+                </div>
             </section>
         </section>;
     }
@@ -82,8 +121,22 @@ export class Settings extends Element {
 
     ["on change at #api-dropdown"](event, dropdown) {
         var option = dropdown.$("option:current");
-        var apiNum = parseInt(option.id.charAt(option.id.length - 1)); // Get the API number ID from the id of the current selected option.
+        var apiNum = parseInt(option.id.substring(4)); // Get the API number ID from the id of the current selected option.
         AudioEngine.changeBackend(apiNum);
+        this.patch(this.render());
+    }
+
+    ["on change at #output-dropdown"](event, dropdown) {
+        var option = dropdown.$("option:current");
+        var deviceNum = parseInt(option.className.substring(7)); // Get the Device number ID from the class of the current selected option.
+        AudioEngine.outputDevice = deviceNum;
+        this.patch(this.render());
+    }
+
+    ["on change at #input-dropdown"](event, dropdown) {
+        var option = dropdown.$("option:current");
+        var deviceNum = parseInt(option.className.substring(7));
+        AudioEngine.inputDevice = deviceNum;
         this.patch(this.render());
     }
 }

@@ -6,17 +6,13 @@ namespace DigiDAW::UI
 	{
 		this->pApp = pApp;
 
-		for (int i = 0; i < RtAudio::Api::NUM_APIS; ++i)
-		{
-			std::string apiName = "";
-			pApp->audioEngine->getAPIName((RtAudio::Api)i, apiName);
-			apiMapping.push_back(apiName);
-		}
-	}
-
-	std::vector<sciter::astring> AudioEngine::getAPIEnum()
-	{
-		return apiMapping;
+		audioFormats = sciter::value::make_map();
+		audioFormats.set_item("SINT8", (int)RTAUDIO_SINT8);
+		audioFormats.set_item("SINT16", (int)RTAUDIO_SINT16);
+		audioFormats.set_item("SINT24", (int)RTAUDIO_SINT24);
+		audioFormats.set_item("SINT32", (int)RTAUDIO_SINT32);
+		audioFormats.set_item("FLOAT32", (int)RTAUDIO_FLOAT32);
+		audioFormats.set_item("FLOAT64", (int)RTAUDIO_FLOAT64);
 	}
 
 	sciter::astring AudioEngine::getAPIDisplayName(int api)

@@ -15,17 +15,42 @@ namespace DigiDAW::Audio
 			if (testAudio.getDeviceCount() > 0) supportedAPIs.push_back(api);
 		}
 
-		updateDevices();
-
-		currentOutputDevice = audioBackend->getDefaultOutputDevice();
-		currentInputDevice = audioBackend->getDefaultInputDevice();
-
-		resetSampleRate();
+		initializeDevices();
 	}
 
 	Engine::~Engine()
 	{
 		stopEngine();
+	}
+
+	void Engine::initializeDevices()
+	{
+		updateDevices();
+
+		currentOutputDevice = getFirstAvailableOutputDevice();
+		currentInputDevice = getFirstAvailableInputDevice();
+
+		resetSampleRate();
+	}
+
+	unsigned int Engine::getFirstAvailableInputDevice()
+	{
+		const unsigned int def = audioBackend->getDefaultInputDevice();
+		if (currentDevices[def].info.probed) return def;
+		for (Engine::AudioDevice device : currentDevices)
+			if (device.info.probed && device.info.inputChannels > 0) return device.index;
+
+		return -1;
+	}
+
+	unsigned int Engine::getFirstAvailableOutputDevice()
+	{
+		const unsigned int def = audioBackend->getDefaultOutputDevice();
+		if (currentDevices[def].info.probed) return def;
+		for (Engine::AudioDevice device : currentDevices)
+			if (device.info.probed && device.info.outputChannels > 0) return device.index;
+
+		return -1;
 	}
 
 	ReturnCode Engine::getSupportedAPIs(std::vector<RtAudio::Api>& dest)
@@ -83,7 +108,7 @@ namespace DigiDAW::Audio
 			return;
 		}
 
-		// As an optimization, use the smaller of the two sample rate lists for the outer loop.
+		// As an optimization, use the smaller of the two sample rate lists for the outer loop to minimize iterations.
 		std::vector<unsigned int>& rates1 =
 			outputInfo.sampleRates.size() < inputInfo.sampleRates.size() ? outputInfo.sampleRates : inputInfo.sampleRates;
 		std::vector<unsigned int>& rates2 =
@@ -178,7 +203,7 @@ namespace DigiDAW::Audio
 			return ReturnCode::Error;
 		}
 
-		// As an optimization, use the smaller of the two sample rate lists for the outer loop.
+		// As an optimization, use the smaller of the two sample rate lists for the outer loop to minimize iterations.
 		std::vector<unsigned int>& rates1 = 
 			outputInfo.sampleRates.size() < inputInfo.sampleRates.size() ? outputInfo.sampleRates : inputInfo.sampleRates;
 		std::vector<unsigned int>& rates2 = 
@@ -206,12 +231,7 @@ namespace DigiDAW::Audio
 
 		audioBackend = std::make_unique<RtAudio>(api);
 
-		updateDevices();
-
-		currentOutputDevice = audioBackend->getDefaultOutputDevice();
-		currentInputDevice = audioBackend->getDefaultInputDevice();
-
-		resetSampleRate();
+		initializeDevices();
 
 		return ReturnCode::Success;
 	}
@@ -219,6 +239,12 @@ namespace DigiDAW::Audio
 	ReturnCode Engine::stopEngine()
 	{
 		if (audioBackend->isStreamOpen()) audioBackend->closeStream();
+		return ReturnCode::Success;
+	}
+
+	ReturnCode Engine::pauseEngine()
+	{
+		if (audioBackend->isStreamRunning()) audioBackend->stopStream();
 		return ReturnCode::Success;
 	}
 }

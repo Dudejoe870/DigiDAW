@@ -65,6 +65,27 @@ export class Settings extends Element {
         return ret;
     }
 
+    getDeviceInfoForDevice(device) {
+        var ret = "";
+
+        ret += `<span class="lang-DeviceOutputChannels"></span>: ${this.devices[device].outputChannels}<br />`;
+        ret += `<span class="lang-DeviceInputChannels"></span>: ${this.devices[device].inputChannels}<br />`;
+        ret += `<span class="lang-DevicePreferredSampleRate"></span>: ${this.devices[device].preferredSampleRate}<br />`;
+
+        return ret;
+    }
+
+    getDeviceInfoSection() {
+        var ret = "";
+
+        ret += `<h3 class="lang-SettingsOutputDevice"></h3>`;
+        ret += this.getDeviceInfoForDevice(AudioEngine.outputDevice);
+        ret += `<h3 class="lang-SettingsInputDevice"></h3>`;
+        ret += this.getDeviceInfoForDevice(AudioEngine.inputDevice);
+
+        return ret;
+    }
+
     getAudioEnginePage() {
         this.devices = AudioEngine.queryDevices();
         this.supportedSampleRates = AudioEngine.getSupportedSampleRates();
@@ -77,8 +98,8 @@ export class Settings extends Element {
                     <select type="dropdown" id="api-dropdown" state-html={ this.getAPIDropdown() }>
                     </select>
                 </div>
-
                 <hr />
+                
                 <h2 class="lang-DeviceSettings"></h2>
                 <div>
                     <label class="lang-SettingsOutputDevice"></label>
@@ -92,13 +113,17 @@ export class Settings extends Element {
                     </select>
                 </div>
                 <br />
-                <hr />
 
                 <div>
                     <label class="lang-SettingsSampleRate"></label>
                     <select type="dropdown" id="samplerate-dropdown" state-html={ this.getSampleRateDropdown() }>
                     </select>
                 </div>
+                <hr />
+
+                <h2 class="lang-DeviceInfo"></h2>
+                <section state-html={ this.getDeviceInfoSection() }>
+                </section>
             </section>
         </section>;
     }
@@ -169,7 +194,7 @@ export class Settings extends Element {
 
     ["on change at #samplerate-dropdown"](event, dropdown) {
         var option = dropdown.$("option:current");
-        var samplerate = parseInt(option.innerText);
+        var samplerate = parseInt(option.innerText); // Get the sample rate from the text content.
 
         AudioEngine.sampleRate = samplerate;
 

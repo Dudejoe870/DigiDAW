@@ -34,6 +34,11 @@ namespace DigiDAW::Audio
 
 		std::vector<AudioDevice> currentDevices;
 
+		/* 
+			Note: We may want to support multiple input and output devices in the future.
+			However, this would require multiple instances of RtAudio to open multiple streams.
+			Which I believe is a valid use of the API, but currently I'm not concerning myself with it.
+		*/
 		unsigned int currentOutputDevice;
 		unsigned int currentInputDevice;
 		unsigned int currentSampleRate;
@@ -41,6 +46,11 @@ namespace DigiDAW::Audio
 		void resetSampleRate();
 		AudioDevice getAudioDevice(unsigned int index);
 		void updateDevices();
+
+		unsigned int getFirstAvailableInputDevice();
+		unsigned int getFirstAvailableOutputDevice();
+
+		void initializeDevices();
 	public:
 		Engine(RtAudio::Api api);
 		~Engine();
@@ -67,5 +77,6 @@ namespace DigiDAW::Audio
 		ReturnCode getSupportedSampleRates(std::vector<unsigned int>& sampleRates);
 
 		ReturnCode stopEngine();
+		ReturnCode pauseEngine();
 	};
 }

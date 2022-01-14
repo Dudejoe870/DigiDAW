@@ -31,3 +31,6 @@
 .lang-SettingsSelectOption:lang(en) { content: "Select an Option on the side to view the relevant options."; }
 .lang-DeviceSettings:lang(en) { content: "Device Settings"; }
 .lang-DeviceInfo:lang(en) { content: "Device Info"; }
+.lang-DeviceOutputChannels:lang(en) { content: "Output Channels"; }
+.lang-DeviceInputChannels:lang(en) { content: "Input Channels"; }
+.lang-DevicePreferredSampleRate:lang(en) { content: "Preferred Sample rate"; }

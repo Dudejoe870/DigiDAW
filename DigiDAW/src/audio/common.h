@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RtAudio.h"
-#include "common.h"
+#include "stdcommon.h"
 
 namespace DigiDAW::Audio 
 {

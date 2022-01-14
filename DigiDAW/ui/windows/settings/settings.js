@@ -32,8 +32,10 @@ export class Settings extends Element {
     getOutputDeviceDropdown() {
         var ret = "";
 
+        ret += `<option class="device--1 lang-None" ${AudioEngine.outputDevice == -1 ? "selected" : ""}></option>`;
+
         for (const device of this.devices) {
-            if (device.outputChannels > 0) {
+            if (device.probed === true && device.outputChannels > 0) {
                 ret += `<option class="device-${device.index}" ${device.index == AudioEngine.outputDevice ? "selected" : ""}>${device.name}</option>`;
             }
         }
@@ -44,8 +46,10 @@ export class Settings extends Element {
     getInputDeviceDropdown() {
         var ret = "";
 
+        ret += `<option class="device--1 lang-None" ${AudioEngine.inputDevice == -1 ? "selected" : ""}></option>`;
+
         for (const device of this.devices) {
-            if (device.inputChannels > 0) {
+            if (device.probed === true && device.inputChannels > 0) {
                 ret += `<option class="device-${device.index}" ${device.index == AudioEngine.inputDevice ? "selected" : ""}>${device.name}</option>`;
             }
         }
@@ -56,7 +60,7 @@ export class Settings extends Element {
     getSampleRateDropdown() {
         var ret = "";
 
-        if (this.devices[AudioEngine.outputDevice].probed && this.devices[AudioEngine.inputDevice].probed) {
+        if (this.supportedSampleRates != undefined) {
             for (const rate of this.supportedSampleRates) {
                 ret += `<option ${rate == AudioEngine.sampleRate ? "selected" : ""}>${rate}</option>`;
             }
@@ -68,9 +72,14 @@ export class Settings extends Element {
     getDeviceInfoForDevice(device) {
         var ret = "";
 
-        ret += `<span class="lang-DeviceOutputChannels"></span>: ${this.devices[device].outputChannels}<br />`;
-        ret += `<span class="lang-DeviceInputChannels"></span>: ${this.devices[device].inputChannels}<br />`;
-        ret += `<span class="lang-DevicePreferredSampleRate"></span>: ${this.devices[device].preferredSampleRate}<br />`;
+        if (device > 0) {
+            ret += `<span class="lang-DeviceOutputChannels"></span>: ${this.devices[device].outputChannels}<br />`;
+            ret += `<span class="lang-DeviceInputChannels"></span>: ${this.devices[device].inputChannels}<br />`;
+            ret += `<span class="lang-DevicePreferredSampleRate"></span>: ${this.devices[device].preferredSampleRate}<br />`;
+        }
+        else {
+            ret += `<span class="lang-SettingsNoDeviceSelected"></span>`;
+        }
 
         return ret;
     }
@@ -106,7 +115,7 @@ export class Settings extends Element {
                     <select type="dropdown" id="output-dropdown" state-html={ this.getOutputDeviceDropdown() }>
                      </select>
                 </div>
-                
+
                 <div>
                     <label class="lang-SettingsInputDevice"></label>
                     <select type="dropdown" id="input-dropdown" state-html={ this.getInputDeviceDropdown() }>

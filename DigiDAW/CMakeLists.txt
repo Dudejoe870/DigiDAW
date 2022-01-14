@@ -12,7 +12,7 @@ macro(subdirlist result curdir)
     set(${result} ${dirlist})
 endmacro()
 
-add_executable (DigiDAW "src/ui/uimain.cpp" "src/ui/resources.cpp" "src/ui/mainwindow.cpp" "src/ui/mainwindow.h" "src/ui/common.h" "src/ui/digidaw.h" "src/ui/registry.h" "src/ui/registry.cpp" "src/ui/digidaw.cpp" "src/audio/engine.cpp" "src/audio/common.h" "src/common.h" "src/audio/engine.h" "src/main.h" "src/main.cpp" "src/ui/audioengine.h" "src/ui/audioengine.cpp")
+add_executable (DigiDAW "src/ui/uimain.cpp" "src/ui/resources.cpp" "src/ui/mainwindow.cpp" "src/ui/mainwindow.h" "src/stdcommon.h" "src/ui/digidaw.h" "src/ui/registry.h" "src/ui/registry.cpp" "src/ui/digidaw.cpp" "src/audio/engine.cpp" "src/audio/common.h" "src/stdcommon.h" "src/audio/engine.h" "src/main.h" "src/main.cpp" "src/ui/audioengine.h" "src/ui/audioengine.cpp")
 
 set_property(TARGET DigiDAW PROPERTY CXX_STANDARD 20)
 
@@ -48,7 +48,7 @@ endif()
 
 target_link_libraries(DigiDAW rtaudio)
 
-target_include_directories(DigiDAW PRIVATE "$ENV{SCITERSDK}/include" "src" "${CMAKE_CURRENT_SOURCE_DIR}../rtaudio")
+target_include_directories(DigiDAW PUBLIC "$ENV{SCITERSDK}/include" "${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}../rtaudio")
 
 subdirlist(UI_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ui)
 add_custom_command(

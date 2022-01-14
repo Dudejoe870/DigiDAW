@@ -39,8 +39,9 @@ namespace DigiDAW::Audio
 			However, this would require multiple instances of RtAudio to open multiple streams.
 			Which I believe is a valid use of the API, but currently I'm not concerning myself with it.
 		*/
-		unsigned int currentOutputDevice;
+		unsigned int currentOutputDevice; // -1 is reserved for the "None" (no device) option.
 		unsigned int currentInputDevice;
+
 		unsigned int currentSampleRate;
 
 		void resetSampleRate();

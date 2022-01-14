@@ -17,15 +17,12 @@ namespace DigiDAW::UI
 
 	sciter::astring AudioEngine::getAPIDisplayName(int api)
 	{
-		std::string ret;
-		pApp->audioEngine->getAPIDisplayName((RtAudio::Api)api, ret);
-		return ret;
+		return pApp->audioEngine->getAPIDisplayName((RtAudio::Api)api);
 	}
 
 	std::vector<int> AudioEngine::getSupportedAPIs()
 	{
-		std::vector<RtAudio::Api> supportedAPIs;
-		pApp->audioEngine->getSupportedAPIs(supportedAPIs);
+		std::vector<RtAudio::Api> supportedAPIs = pApp->audioEngine->getSupportedAPIs();
 
 		std::vector<int> ret;
 		for (RtAudio::Api api : supportedAPIs) ret.push_back((int)api);
@@ -34,9 +31,7 @@ namespace DigiDAW::UI
 
 	int AudioEngine::getCurrentAPI()
 	{
-		RtAudio::Api ret;
-		pApp->audioEngine->getCurrentAPI(ret);
-		return (int)ret;
+		return (int)pApp->audioEngine->getCurrentAPI();
 	}
 
 	void AudioEngine::changeBackend(int api)
@@ -46,8 +41,7 @@ namespace DigiDAW::UI
 
 	std::vector<sciter::value> AudioEngine::queryDevices()
 	{
-		std::vector<Audio::Engine::AudioDevice> devices;
-		pApp->audioEngine->getDevices(devices);
+		std::vector<Audio::Engine::AudioDevice> devices = pApp->audioEngine->getDevices();
 
 		std::vector<sciter::value> ret;
 		for (Audio::Engine::AudioDevice device : devices)

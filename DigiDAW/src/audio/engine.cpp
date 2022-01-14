@@ -53,16 +53,14 @@ namespace DigiDAW::Audio
 		return -1;
 	}
 
-	ReturnCode Engine::getSupportedAPIs(std::vector<RtAudio::Api>& dest)
+	std::vector<RtAudio::Api> Engine::getSupportedAPIs()
 	{
-		dest = supportedAPIs;
-		return ReturnCode::Success;
+		return supportedAPIs;
 	}
 
-	ReturnCode Engine::getCurrentAPI(RtAudio::Api& api)
+	RtAudio::Api Engine::getCurrentAPI()
 	{
-		api = audioBackend->getCurrentApi();
-		return ReturnCode::Success;
+		return audioBackend->getCurrentApi();
 	}
 
 	void Engine::updateDevices()
@@ -72,22 +70,19 @@ namespace DigiDAW::Audio
 			currentDevices.push_back(getAudioDevice(i));
 	}
 
-	ReturnCode Engine::getDevices(std::vector<Engine::AudioDevice>& dest)
+	std::vector<Engine::AudioDevice> Engine::getDevices()
 	{
-		dest = currentDevices;
-		return ReturnCode::Success;
+		return currentDevices;
 	}
 
-	ReturnCode Engine::getAPIDisplayName(RtAudio::Api api, std::string& dest)
+	std::string Engine::getAPIDisplayName(RtAudio::Api api)
 	{
-		dest = RtAudio::getApiDisplayName(api);
-		return ReturnCode::Success;
+		return RtAudio::getApiDisplayName(api);
 	}
 
-	ReturnCode Engine::getAPIName(RtAudio::Api api, std::string& dest)
+	std::string Engine::getAPIName(RtAudio::Api api)
 	{
-		dest = RtAudio::getApiName(api);
-		return ReturnCode::Success;
+		return RtAudio::getApiName(api);
 	}
 
 	Engine::AudioDevice Engine::getAudioDevice(unsigned int index)
@@ -199,16 +194,14 @@ namespace DigiDAW::Audio
 		return ReturnCode::Success;
 	}
 
-	ReturnCode Engine::getCurrentOutputDevice(unsigned int& device)
+	unsigned int Engine::getCurrentOutputDevice()
 	{
-		device = currentOutputDevice;
-		return ReturnCode::Success;
+		return currentOutputDevice;
 	}
 
-	ReturnCode Engine::getCurrentInputDevice(unsigned int& device)
+	unsigned int Engine::getCurrentInputDevice()
 	{
-		device = currentInputDevice;
-		return ReturnCode::Success;
+		return currentInputDevice;
 	}
 
 	ReturnCode Engine::setCurrentSampleRate(unsigned int sampleRate)
@@ -220,10 +213,9 @@ namespace DigiDAW::Audio
 		return ReturnCode::Success;
 	}
 
-	ReturnCode Engine::getCurrentSampleRate(unsigned int& sampleRate)
+	unsigned int Engine::getCurrentSampleRate()
 	{
-		sampleRate = currentSampleRate;
-		return ReturnCode::Success;
+		return currentSampleRate;
 	}
 
 	ReturnCode Engine::getSupportedSampleRates(std::vector<unsigned int>& sampleRates)
@@ -301,5 +293,15 @@ namespace DigiDAW::Audio
 	{
 		if (audioBackend->isStreamRunning()) audioBackend->stopStream();
 		return ReturnCode::Success;
+	}
+
+	bool Engine::isStreamOpen()
+	{
+		return audioBackend->isStreamOpen();
+	}
+
+	bool Engine::isStreamRunning()
+	{
+		return audioBackend->isStreamRunning();
 	}
 }

@@ -56,28 +56,31 @@ namespace DigiDAW::Audio
 		Engine(RtAudio::Api api);
 		~Engine();
 
-		ReturnCode getSupportedAPIs(std::vector<RtAudio::Api>& dest);
-		ReturnCode getCurrentAPI(RtAudio::Api& api);
+		std::vector<RtAudio::Api> getSupportedAPIs();
+		RtAudio::Api getCurrentAPI();
 
 		ReturnCode changeBackend(RtAudio::Api api);
 
-		ReturnCode getDevices(std::vector<AudioDevice>& dest);
+		std::vector<AudioDevice> getDevices();
 
-		ReturnCode getAPIDisplayName(RtAudio::Api api, std::string& dest);
-		ReturnCode getAPIName(RtAudio::Api api, std::string& dest);
+		std::string getAPIDisplayName(RtAudio::Api api);
+		std::string getAPIName(RtAudio::Api api);
 
 		ReturnCode setCurrentOutputDevice(unsigned int device);
 		ReturnCode setCurrentInputDevice(unsigned int device);
 
-		ReturnCode getCurrentOutputDevice(unsigned int& device);
-		ReturnCode getCurrentInputDevice(unsigned int& device);
+		unsigned int getCurrentOutputDevice();
+		unsigned int getCurrentInputDevice();
 
 		ReturnCode setCurrentSampleRate(unsigned int sampleRate);
-		ReturnCode getCurrentSampleRate(unsigned int& sampleRate);
+		unsigned int getCurrentSampleRate();
 
 		ReturnCode getSupportedSampleRates(std::vector<unsigned int>& sampleRates);
 
 		ReturnCode stopEngine();
 		ReturnCode pauseEngine();
+
+		bool isStreamOpen();
+		bool isStreamRunning();
 	};
 }

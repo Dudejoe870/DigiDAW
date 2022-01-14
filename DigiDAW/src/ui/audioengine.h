@@ -21,9 +21,7 @@ namespace DigiDAW::UI
 
         int getOutputDevice()
         {
-            unsigned int ret;
-            pApp->audioEngine->getCurrentOutputDevice(ret);
-            return (int)ret;
+            return (int)pApp->audioEngine->getCurrentOutputDevice();
         }
 
         bool setInputDevice(int device)
@@ -34,9 +32,7 @@ namespace DigiDAW::UI
 
         int getInputDevice()
         {
-            unsigned int ret;
-            pApp->audioEngine->getCurrentInputDevice(ret);
-            return (int)ret;
+            return (int)pApp->audioEngine->getCurrentInputDevice();
         }
 
         bool setSampleRate(int rate)
@@ -47,9 +43,7 @@ namespace DigiDAW::UI
 
         int getSampleRate()
         {
-            unsigned int ret;
-            pApp->audioEngine->getCurrentSampleRate(ret);
-            return (int)ret;
+            return (int)pApp->audioEngine->getCurrentSampleRate();
         }
     public:
         AudioEngine(MainApplication* pApp);

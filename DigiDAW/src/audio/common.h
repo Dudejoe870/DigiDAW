@@ -7,7 +7,7 @@ namespace DigiDAW::Audio
 {
 	enum class ReturnCode
 	{
-		Success,
-		Error
+		Success = 0,
+		Error = 1
 	};
 }

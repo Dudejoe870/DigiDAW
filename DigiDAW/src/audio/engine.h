@@ -43,6 +43,7 @@ namespace DigiDAW::Audio
 		unsigned int currentInputDevice;
 
 		unsigned int currentSampleRate;
+		unsigned int currentBufferSize;
 
 		void resetSampleRate();
 		AudioDevice getAudioDevice(unsigned int index);
@@ -52,6 +53,16 @@ namespace DigiDAW::Audio
 		unsigned int getFirstAvailableOutputDevice();
 
 		void initializeDevices();
+
+		std::function<std::vector<std::vector<float>>(std::vector<std::vector<float>> inputBuffer, double time, unsigned int nFrames, unsigned int nOutChannels)> outputCallback;
+
+		static int audioCallback(
+			void* outputBuffer, 
+			void* inputBuffer, 
+			unsigned int nFrames, 
+			double streamTime, 
+			RtAudioStreamStatus status, 
+			void* userData);
 	public:
 		Engine(RtAudio::Api api);
 		~Engine();
@@ -75,7 +86,12 @@ namespace DigiDAW::Audio
 		ReturnCode setCurrentSampleRate(unsigned int sampleRate);
 		unsigned int getCurrentSampleRate();
 
+		ReturnCode setCurrentBufferSize(unsigned int bufferSize);
+		unsigned int getCurrentBufferSize();
+
 		ReturnCode getSupportedSampleRates(std::vector<unsigned int>& sampleRates);
+
+		ReturnCode startEngine();
 
 		ReturnCode stopEngine();
 		ReturnCode pauseEngine();

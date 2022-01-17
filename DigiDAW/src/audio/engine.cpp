@@ -16,6 +16,27 @@ namespace DigiDAW::Audio
 		}
 
 		initializeDevices();
+
+		outputCallback = [this]
+			(std::vector<std::vector<float>> inputBuffer, 
+				double time, 
+				unsigned int nFrames, 
+				unsigned int nOutChannels) 
+			-> std::vector<std::vector<float>>
+		{
+			std::vector<std::vector<float>> output = std::vector<std::vector<float>>(nOutChannels);
+
+			const double pi = 3.14159265358979323846;
+
+			std::vector<float> monoOutput;
+			for (unsigned int frame = 0; frame < nFrames; ++frame)
+				monoOutput.push_back((float)0.10 * std::sin(2 * pi * 440.0 * (time + ((double)frame / (double)currentSampleRate))));
+
+			output[0] = monoOutput;
+			output[1] = monoOutput;
+
+			return output;
+		};
 	}
 
 	Engine::~Engine()
@@ -29,6 +50,8 @@ namespace DigiDAW::Audio
 
 		currentOutputDevice = getFirstAvailableOutputDevice();
 		if (currentInputDevice != -1) currentInputDevice = getFirstAvailableInputDevice();
+
+		currentBufferSize = 512;
 
 		resetSampleRate();
 	}
@@ -174,8 +197,6 @@ namespace DigiDAW::Audio
 		currentOutputDevice = device;
 
 		resetSampleRate();
-
-		// TODO: Reopen the stream with the new output device if we already had one open before.
 		return ReturnCode::Success;
 	}
 
@@ -189,8 +210,6 @@ namespace DigiDAW::Audio
 		currentInputDevice = device;
 
 		resetSampleRate();
-
-		// TODO: Reopen the stream with the new input device if we already had one open before.
 		return ReturnCode::Success;
 	}
 
@@ -209,13 +228,25 @@ namespace DigiDAW::Audio
 		stopEngine();
 		currentSampleRate = sampleRate;
 
-		// TODO: Reopen the stream with the new sample rate if we already had one open before.
 		return ReturnCode::Success;
 	}
 
 	unsigned int Engine::getCurrentSampleRate()
 	{
 		return currentSampleRate;
+	}
+
+	ReturnCode Engine::setCurrentBufferSize(unsigned int bufferSize)
+	{
+		stopEngine();
+		currentBufferSize = bufferSize;
+
+		return ReturnCode::Success;
+	}
+
+	unsigned int Engine::getCurrentBufferSize()
+	{
+		return currentBufferSize;
 	}
 
 	ReturnCode Engine::getSupportedSampleRates(std::vector<unsigned int>& sampleRates)
@@ -283,15 +314,106 @@ namespace DigiDAW::Audio
 		return ReturnCode::Success;
 	}
 
+	int Engine::audioCallback(
+		void* outputBuffer,
+		void* inputBuffer,
+		unsigned int nFrames,
+		double streamTime,
+		RtAudioStreamStatus status,
+		void* userData)
+	{
+		if (!outputBuffer) return 2;
+
+		Engine* engine = (Engine*)userData;
+
+		float* outBuf = (float*)outputBuffer;
+		float* inBuf = (float*)inputBuffer;
+
+		unsigned int nOutChannels = engine->currentDevices[engine->currentOutputDevice].info.outputChannels;
+
+		std::vector<std::vector<float>> inputChannels;
+		if (inBuf)
+		{
+			unsigned int nInChannels = engine->currentDevices[engine->currentInputDevice].info.inputChannels;
+			inputChannels = std::vector<std::vector<float>>(nInChannels);
+
+			for (unsigned int frame = 0; frame < nFrames; ++frame)
+				for (unsigned int channel = 0; channel < nInChannels; ++channel)
+					inputChannels[channel].push_back(inBuf[(frame * nInChannels) + channel]);
+		}
+
+		std::vector<std::vector<float>> outputChannels;
+		if (engine->outputCallback)
+		{
+			outputChannels = engine->outputCallback(inputChannels, streamTime, nFrames, nOutChannels);
+
+			for (unsigned int frame = 0; frame < nFrames; ++frame)
+			{
+				for (unsigned int channel = 0; channel < nOutChannels; ++channel)
+				{
+					if (outputChannels[channel].size() > 0)
+						outBuf[(frame * nOutChannels) + channel] = outputChannels[channel][frame];
+					else outBuf[(frame * nOutChannels) + channel] = 0.0f;
+				}
+			}
+		}
+		else
+		{
+			for (unsigned int frame = 0; frame < nFrames; ++frame)
+				for (unsigned int channel = 0; channel < nOutChannels; ++channel)
+					outBuf[(frame * nOutChannels) + channel] = 0.0f;
+		}
+
+		return 0;
+	}
+
+	ReturnCode Engine::startEngine()
+	{
+		if (isStreamOpen() && !isStreamRunning()) audioBackend->startStream();
+
+		if (currentOutputDevice == -1)
+			return ReturnCode::Error;
+
+		RtAudio::StreamParameters outputParams;
+		outputParams.deviceId = currentOutputDevice;
+		outputParams.firstChannel = 0;
+		outputParams.nChannels = currentDevices[currentOutputDevice].info.outputChannels;
+
+		RtAudio::StreamParameters inputParams;
+		if (currentInputDevice != -1)
+		{
+			inputParams.deviceId = currentInputDevice;
+			inputParams.firstChannel = 0;
+			inputParams.nChannels = currentDevices[currentInputDevice].info.inputChannels;
+		}
+
+		unsigned int bufferSize = currentBufferSize;
+		RtAudioErrorType streamError = 
+			audioBackend->openStream(
+				&outputParams, 
+				(currentInputDevice != -1 ? &inputParams : NULL), 
+				RTAUDIO_FLOAT32, 
+				currentSampleRate, 
+				&bufferSize, 
+				audioCallback, this);
+
+		audioBackend->startStream();
+
+		if (streamError != RTAUDIO_NO_ERROR)
+			return ReturnCode::Error;
+
+		return ReturnCode::Success;
+	}
+
 	ReturnCode Engine::stopEngine()
 	{
-		if (audioBackend->isStreamOpen()) audioBackend->closeStream();
+		if (isStreamOpen()) audioBackend->closeStream();
 		return ReturnCode::Success;
 	}
 
 	ReturnCode Engine::pauseEngine()
 	{
-		if (audioBackend->isStreamRunning()) audioBackend->stopStream();
+		if (isStreamRunning()) audioBackend->stopStream();
 		return ReturnCode::Success;
 	}
 

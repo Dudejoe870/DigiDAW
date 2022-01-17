@@ -12,10 +12,11 @@ namespace DigiDAW::UI
         MainApplication* pApp;
 
         sciter::value audioFormats;
+        int returnCode;
 
         bool setOutputDevice(int device)
         {
-            pApp->audioEngine->setCurrentOutputDevice((unsigned int)device);
+            returnCode = (int)pApp->audioEngine->setCurrentOutputDevice((unsigned int)device);
             return true;
         }
 
@@ -26,7 +27,7 @@ namespace DigiDAW::UI
 
         bool setInputDevice(int device)
         {
-            pApp->audioEngine->setCurrentInputDevice((unsigned int)device);
+            returnCode = (int)pApp->audioEngine->setCurrentInputDevice((unsigned int)device);
             return true;
         }
 
@@ -37,13 +38,34 @@ namespace DigiDAW::UI
 
         bool setSampleRate(int rate)
         {
-            pApp->audioEngine->setCurrentSampleRate((unsigned int)rate);
+            returnCode = (int)pApp->audioEngine->setCurrentSampleRate((unsigned int)rate);
             return true;
         }
 
         int getSampleRate()
         {
             return (int)pApp->audioEngine->getCurrentSampleRate();
+        }
+
+        bool setBufferSize(int size)
+        {
+            returnCode = (int)pApp->audioEngine->setCurrentBufferSize((unsigned int)size);
+            return true;
+        }
+
+        int getBufferSize()
+        {
+            return (int)pApp->audioEngine->getCurrentBufferSize();
+        }
+
+        bool getIsStreamRunning()
+        {
+            return pApp->audioEngine->isStreamRunning();
+        }
+
+        bool getIsStreamOpen()
+        {
+            return pApp->audioEngine->isStreamOpen();
         }
     public:
         AudioEngine(MainApplication* pApp);
@@ -59,6 +81,10 @@ namespace DigiDAW::UI
 
         std::vector<int> getSupportedSampleRates();
 
+        void start();
+        void stop();
+        void pause();
+
         SOM_PASSPORT_BEGIN(AudioEngine)
             SOM_FUNCS(
                 SOM_FUNC(getAPIDisplayName), 
@@ -66,12 +92,19 @@ namespace DigiDAW::UI
                 SOM_FUNC(getCurrentAPI),
                 SOM_FUNC(changeBackend),
                 SOM_FUNC(queryDevices),
-                SOM_FUNC(getSupportedSampleRates))
+                SOM_FUNC(getSupportedSampleRates),
+                SOM_FUNC(start),
+                SOM_FUNC(stop),
+                SOM_FUNC(pause))
             SOM_PROPS(
                 SOM_RO_PROP(audioFormats),
+                SOM_RO_PROP(returnCode),
                 SOM_VIRTUAL_PROP(outputDevice, getOutputDevice, setOutputDevice),
                 SOM_VIRTUAL_PROP(inputDevice, getInputDevice, setInputDevice),
-                SOM_VIRTUAL_PROP(sampleRate, getSampleRate, setSampleRate))
+                SOM_VIRTUAL_PROP(sampleRate, getSampleRate, setSampleRate),
+                SOM_VIRTUAL_PROP(bufferSize, getBufferSize, setBufferSize),
+                SOM_RO_VIRTUAL_PROP(isStreamRunning, getIsStreamRunning),
+                SOM_RO_VIRTUAL_PROP(isStreamOpen, getIsStreamOpen))
         SOM_PASSPORT_END
     };
 }

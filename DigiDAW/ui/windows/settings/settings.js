@@ -8,6 +8,8 @@ export class Settings extends Element {
     devices = [];
     supportedSampleRates = [];
 
+    testTone = false;
+
     Pages = Object.freeze({
         AudioEngine: 0,
         MidiEngine: 1
@@ -19,87 +21,99 @@ export class Settings extends Element {
         this.supportedAPIs = AudioEngine.getSupportedAPIs();
     }
 
+    componentWillUnmount() {
+        if (this.testTone) {
+            AudioEngine.pause();
+        }
+    }
+
     getAPIDropdown() {
-        var ret = "";
+        var html = "";
 
         for (const api of this.supportedAPIs) {
-            ret += `<option id="api-${api}" ${api == AudioEngine.getCurrentAPI() ? "selected" : ""}>${AudioEngine.getAPIDisplayName(api)}</option>`;
+            html += `<option id="api-${api}" ${api == AudioEngine.getCurrentAPI() ? "selected" : ""}>${AudioEngine.getAPIDisplayName(api)}</option>`;
         }
 
-        return ret;
+        return html;
     }
 
     getOutputDeviceDropdown() {
-        var ret = "";
+        var html = "";
 
-        ret += `<option class="device--1 lang-None" ${AudioEngine.outputDevice == -1 ? "selected" : ""}></option>`;
+        html += `<option class="device--1 lang-None" ${AudioEngine.outputDevice == -1 ? "selected" : ""}></option>`;
 
         for (const device of this.devices) {
             if (device.probed === true && device.outputChannels > 0) {
-                ret += `<option class="device-${device.index}" ${device.index == AudioEngine.outputDevice ? "selected" : ""}>${device.name}</option>`;
+                html += `<option class="device-${device.index}" ${device.index == AudioEngine.outputDevice ? "selected" : ""}>${device.name}</option>`;
             }
         }
 
-        return ret;
+        return html;
     }
 
     getInputDeviceDropdown() {
-        var ret = "";
+        var html = "";
 
-        ret += `<option class="device--1 lang-None" ${AudioEngine.inputDevice == -1 ? "selected" : ""}></option>`;
+        html += `<option class="device--1 lang-None" ${AudioEngine.inputDevice == -1 ? "selected" : ""}></option>`;
 
         for (const device of this.devices) {
             if (device.probed === true && device.inputChannels > 0) {
-                ret += `<option class="device-${device.index}" ${device.index == AudioEngine.inputDevice ? "selected" : ""}>${device.name}</option>`;
+                html += `<option class="device-${device.index}" ${device.index == AudioEngine.inputDevice ? "selected" : ""}>${device.name}</option>`;
             }
         }
 
-        return ret;
+        return html;
     }
 
     getSampleRateDropdown() {
-        var ret = "";
+        var html = "";
 
         if (this.supportedSampleRates != undefined) {
             for (const rate of this.supportedSampleRates) {
-                ret += `<option ${rate == AudioEngine.sampleRate ? "selected" : ""}>${rate}</option>`;
+                html += `<option ${rate == AudioEngine.sampleRate ? "selected" : ""}>${rate}</option>`;
             }
         }
 
-        return ret;
+        return html;
     }
 
     getDeviceInfoForDevice(device) {
-        var ret = "";
+        var html = "";
 
         if (device > 0) {
-            ret += `<span class="lang-DeviceOutputChannels"></span>: ${this.devices[device].outputChannels}<br />`;
-            ret += `<span class="lang-DeviceInputChannels"></span>: ${this.devices[device].inputChannels}<br />`;
-            ret += `<span class="lang-DevicePreferredSampleRate"></span>: ${this.devices[device].preferredSampleRate}<br />`;
+            html += `<span class="lang-DeviceOutputChannels"></span>: ${this.devices[device].outputChannels}<br />`;
+            html += `<span class="lang-DeviceInputChannels"></span>: ${this.devices[device].inputChannels}<br />`;
+            html += `<span class="lang-DevicePreferredSampleRate"></span>: ${this.devices[device].preferredSampleRate}<br />`;
         }
         else {
-            ret += `<span class="lang-SettingsNoDeviceSelected"></span>`;
+            html += `<span class="lang-SettingsNoDeviceSelected"></span>`;
         }
 
-        return ret;
+        return html;
     }
 
     getDeviceInfoSection() {
-        var ret = "";
+        var html = "";
 
-        ret += `<h3 class="lang-SettingsOutputDevice"></h3>`;
-        ret += this.getDeviceInfoForDevice(AudioEngine.outputDevice);
-        ret += `<h3 class="lang-SettingsInputDevice"></h3>`;
-        ret += this.getDeviceInfoForDevice(AudioEngine.inputDevice);
+        html += `<h3 class="lang-SettingsOutputDevice"></h3>`;
+        html += this.getDeviceInfoForDevice(AudioEngine.outputDevice);
+        html += `<h3 class="lang-SettingsInputDevice"></h3>`;
+        html += this.getDeviceInfoForDevice(AudioEngine.inputDevice);
 
-        return ret;
+        return html;
+    }
+
+    getTestOutputButton() {
+        var html = `<button id="test-button" style="display: inline-block; position: absolute;" ${ AudioEngine.isStreamRunning ? "disabled" : "" }>Test</button>`;
+
+        return html;
     }
 
     getAudioEnginePage() {
         this.devices = AudioEngine.queryDevices();
         this.supportedSampleRates = AudioEngine.getSupportedSampleRates();
 
-        return <section style="flow: vertical; height: *; width: *; margin: 32px; margin-top: 0; margin-bottom: 0; padding: 0; text-align: center;">
+        return <section style="flow: vertical; height: *; width: *; margin: 32px; margin-top: 0; margin-bottom: 0; padding: 0; text-align: center; align-items: center; justify-content: center;">
             <h1 class="lang-AudioEngineSettings"></h1>
             <section style="flow: vertical; text-align: center; horizontal-align: center; width: *;">
                 <div>
@@ -113,8 +127,10 @@ export class Settings extends Element {
                 <div>
                     <label class="lang-SettingsOutputDevice"></label>
                     <select type="dropdown" id="output-dropdown" state-html={ this.getOutputDeviceDropdown() }>
-                     </select>
+                    </select>
+                    <span state-html={this.getTestOutputButton()}></span>
                 </div>
+                <br />
 
                 <div>
                     <label class="lang-SettingsInputDevice"></label>
@@ -172,6 +188,14 @@ export class Settings extends Element {
 
     ["on click at #midi-button"](event, button) {
         this.componentUpdate({ currentPage: this.Pages.MidiEngine });
+    }
+
+    ["on click at #test-button"](event, button) {
+        AudioEngine.start();
+        this.patch(this.render());
+
+        this.testTone = true;
+        setTimeout(() => { AudioEngine.pause(); this.patch(this.render()); this.testTone = false; }, 1000);
     }
 
     ["on change at #api-dropdown"](event, dropdown) {

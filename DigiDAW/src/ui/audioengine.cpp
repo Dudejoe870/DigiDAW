@@ -36,7 +36,7 @@ namespace DigiDAW::UI
 
 	void AudioEngine::changeBackend(int api)
 	{
-		pApp->audioEngine->changeBackend((RtAudio::Api)api);
+		returnCode = (int)pApp->audioEngine->changeBackend((RtAudio::Api)api);
 	}
 
 	std::vector<sciter::value> AudioEngine::queryDevices()
@@ -71,10 +71,25 @@ namespace DigiDAW::UI
 	std::vector<int> AudioEngine::getSupportedSampleRates()
 	{
 		std::vector<unsigned int> supportedSampleRates;
-		pApp->audioEngine->getSupportedSampleRates(supportedSampleRates);
+		returnCode = (int)pApp->audioEngine->getSupportedSampleRates(supportedSampleRates);
 
 		std::vector<int> ret;
 		for (unsigned int rate : supportedSampleRates) ret.push_back((int)rate);
 		return ret;
+	}
+
+	void AudioEngine::start()
+	{
+		if (!pApp->audioEngine->isStreamRunning()) returnCode = (int)pApp->audioEngine->startEngine();
+	}
+
+	void AudioEngine::stop()
+	{
+		returnCode = (int)pApp->audioEngine->stopEngine();
+	}
+
+	void AudioEngine::pause()
+	{
+		returnCode = (int)pApp->audioEngine->pauseEngine();
 	}
 }

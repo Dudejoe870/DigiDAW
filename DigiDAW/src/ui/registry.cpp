@@ -2,6 +2,7 @@
 
 #include "ui/digidaw.h"
 #include "ui/audioengine.h"
+#include "ui/audiomixer.h"
 
 namespace DigiDAW::UI
 {
@@ -11,5 +12,6 @@ namespace DigiDAW::UI
 
 		SciterSetGlobalAsset(new DigiDAW());
 		SciterSetGlobalAsset(new AudioEngine(pApp));
+		SciterSetGlobalAsset(new AudioMixer(pApp));
 	}
 }

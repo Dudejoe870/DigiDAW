@@ -9,10 +9,7 @@ namespace DigiDAW::UI
     public:
         DigiDAW() {}
 
-        sciter::astring getStatusMessage();
-
         SOM_PASSPORT_BEGIN(DigiDAW)
-            SOM_FUNCS(SOM_FUNC(getStatusMessage))
         SOM_PASSPORT_END
     };
 }

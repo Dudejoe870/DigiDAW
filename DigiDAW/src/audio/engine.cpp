@@ -16,27 +16,6 @@ namespace DigiDAW::Audio
 		}
 
 		initializeDevices();
-
-		outputCallback = [this]
-			(std::vector<std::vector<float>> inputBuffer, 
-				double time, 
-				unsigned int nFrames, 
-				unsigned int nOutChannels) 
-			-> std::vector<std::vector<float>>
-		{
-			std::vector<std::vector<float>> output = std::vector<std::vector<float>>(nOutChannels);
-
-			const double pi = 3.14159265358979323846;
-
-			std::vector<float> monoOutput;
-			for (unsigned int frame = 0; frame < nFrames; ++frame)
-				monoOutput.push_back((float)0.10 * std::sin(2 * pi * 440.0 * (time + ((double)frame / (double)currentSampleRate))));
-
-			output[0] = monoOutput;
-			output[1] = monoOutput;
-
-			return output;
-		};
 	}
 
 	Engine::~Engine()
@@ -322,54 +301,30 @@ namespace DigiDAW::Audio
 		RtAudioStreamStatus status,
 		void* userData)
 	{
-		if (!outputBuffer) return 2;
-
 		Engine* engine = (Engine*)userData;
+
+		if (!outputBuffer || engine->currentOutputDevice == -1) return 2;
 
 		float* outBuf = (float*)outputBuffer;
 		float* inBuf = (float*)inputBuffer;
 
 		unsigned int nOutChannels = engine->currentDevices[engine->currentOutputDevice].info.outputChannels;
+		unsigned int nInChannels = (engine->currentInputDevice != -1) ? engine->currentDevices[engine->currentInputDevice].info.inputChannels : 0;
 
-		std::vector<std::vector<float>> inputChannels;
-		if (inBuf)
-		{
-			unsigned int nInChannels = engine->currentDevices[engine->currentInputDevice].info.inputChannels;
-			inputChannels = std::vector<std::vector<float>>(nInChannels);
-
-			for (unsigned int frame = 0; frame < nFrames; ++frame)
-				for (unsigned int channel = 0; channel < nInChannels; ++channel)
-					inputChannels[channel].push_back(inBuf[(frame * nInChannels) + channel]);
-		}
-
-		std::vector<std::vector<float>> outputChannels;
-		if (engine->outputCallback)
-		{
-			outputChannels = engine->outputCallback(inputChannels, streamTime, nFrames, nOutChannels);
-
-			for (unsigned int frame = 0; frame < nFrames; ++frame)
-			{
-				for (unsigned int channel = 0; channel < nOutChannels; ++channel)
-				{
-					if (outputChannels[channel].size() > 0)
-						outBuf[(frame * nOutChannels) + channel] = outputChannels[channel][frame];
-					else outBuf[(frame * nOutChannels) + channel] = 0.0f;
-				}
-			}
-		}
-		else
-		{
-			for (unsigned int frame = 0; frame < nFrames; ++frame)
-				for (unsigned int channel = 0; channel < nOutChannels; ++channel)
-					outBuf[(frame * nOutChannels) + channel] = 0.0f;
-		}
+		std::memset(outBuf, 0, sizeof(float) * (nOutChannels * nFrames));
+		engine->mixer.mix(outBuf, inBuf, streamTime, nFrames, nOutChannels, nInChannels, engine->currentSampleRate);
 
 		return 0;
 	}
 
 	ReturnCode Engine::startEngine()
 	{
-		if (isStreamOpen() && !isStreamRunning()) audioBackend->startStream();
+		if (isStreamOpen() && !isStreamRunning())
+		{
+			audioBackend->startStream();
+			mixer.updateCurrentTime(audioBackend->getStreamTime());
+			return ReturnCode::Success;
+		}
 
 		if (currentOutputDevice == -1)
 			return ReturnCode::Error;
@@ -387,6 +342,12 @@ namespace DigiDAW::Audio
 			inputParams.nChannels = currentDevices[currentInputDevice].info.inputChannels;
 		}
 
+		RtAudio::StreamOptions options;
+		options.flags = RTAUDIO_NONINTERLEAVED;
+		options.numberOfBuffers = 0;
+		options.priority = 0;
+		options.streamName = "main";
+
 		unsigned int bufferSize = currentBufferSize;
 		RtAudioErrorType streamError = 
 			audioBackend->openStream(
@@ -395,9 +356,10 @@ namespace DigiDAW::Audio
 				RTAUDIO_FLOAT32, 
 				currentSampleRate, 
 				&bufferSize, 
-				audioCallback, this);
+				audioCallback, this, &options);
 
 		audioBackend->startStream();
+		mixer.updateCurrentTime(audioBackend->getStreamTime());
 
 		if (streamError != RTAUDIO_NO_ERROR)
 			return ReturnCode::Error;

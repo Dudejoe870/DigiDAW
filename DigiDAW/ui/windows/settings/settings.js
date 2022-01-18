@@ -192,10 +192,12 @@ export class Settings extends Element {
 
     ["on click at #test-button"](event, button) {
         AudioEngine.start();
+
+        AudioMixer.startTestTone();
         this.patch(this.render());
 
         this.testTone = true;
-        setTimeout(() => { AudioEngine.pause(); this.patch(this.render()); this.testTone = false; }, 1000);
+        setTimeout(() => { AudioMixer.endTestTone(); AudioEngine.pause(); this.patch(this.render()); this.testTone = false; }, 1000);
     }
 
     ["on change at #api-dropdown"](event, dropdown) {

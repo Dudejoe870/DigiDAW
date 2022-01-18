@@ -2,6 +2,8 @@
 
 #include "audio/common.h"
 
+#include "audio/mixer.h"
+
 namespace DigiDAW::Audio
 {
 	class Engine
@@ -54,8 +56,6 @@ namespace DigiDAW::Audio
 
 		void initializeDevices();
 
-		std::function<std::vector<std::vector<float>>(std::vector<std::vector<float>> inputBuffer, double time, unsigned int nFrames, unsigned int nOutChannels)> outputCallback;
-
 		static int audioCallback(
 			void* outputBuffer, 
 			void* inputBuffer, 
@@ -64,6 +64,8 @@ namespace DigiDAW::Audio
 			RtAudioStreamStatus status, 
 			void* userData);
 	public:
+		Mixer mixer;
+
 		Engine(RtAudio::Api api);
 		~Engine();
 

@@ -1,12 +1,50 @@
 #include "audio/mixer.h"
 
+#include "audio/engine.h"
+
+#ifdef __AVX__
+#include <immintrin.h>
+#else
+#error AVX isn't available... cannot compile.
+#endif
+
 namespace DigiDAW::Audio
 {
-	Mixer::Mixer()
+	Mixer::Mixer(Engine& audioEngine) 
+		: audioEngine(audioEngine)
 	{
 		this->doTestTone = false;
 		this->testToneStartTime = 0.0;
 		this->currentTime = 0.0;
+
+		audioEngine.trackState.registerUpdateTracksHandler([=]() { updateTrackBuffers(); });
+		audioEngine.trackState.registerUpdateBusesHandler ([=]() { updateBusBuffers(); });
+	}
+
+	void Mixer::updateTrackBuffers()
+	{
+		const std::vector<TrackState::TrackIdentifier>& tracks = audioEngine.trackState.getAllTracks();
+
+		trackBuffers.clear();
+
+		for (const TrackState::TrackIdentifier& track : tracks)
+		{
+			TrackState::Track trackInfo = audioEngine.trackState.getTrack(track);
+			trackBuffers[track] = MixBuffer(audioEngine.getRealBufferSize(), (unsigned int)trackInfo.nChannels);
+		}
+	}
+
+	void Mixer::updateBusBuffers()
+	{
+		const std::vector<TrackState::BusIdentifier>& buses = audioEngine.trackState.getAllBuses();
+
+		busBuffers.clear();
+
+		for (const TrackState::BusIdentifier& bus : buses)
+		{
+			TrackState::Bus busInfo = audioEngine.trackState.getBus(bus);
+			busBuffers[bus] = MixBuffer(audioEngine.getRealBufferSize(), (unsigned int)busInfo.nChannels);
+		}
 	}
 
 	void Mixer::updateCurrentTime(double time)
@@ -18,7 +56,7 @@ namespace DigiDAW::Audio
 		float* outputBuffer,
 		float* inputBuffer, 
 		double time, 
-		unsigned int nFrames, 
+		unsigned int nFrames,
 		unsigned int nOutChannels, unsigned int nInChannels, unsigned int sampleRate)
 	{
 		currentTime = time;

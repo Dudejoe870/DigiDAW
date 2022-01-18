@@ -12,7 +12,13 @@ macro(subdirlist result curdir)
     set(${result} ${dirlist})
 endmacro()
 
-add_executable (DigiDAW "src/ui/uimain.cpp" "src/ui/resources.cpp" "src/ui/mainwindow.cpp" "src/ui/mainwindow.h" "src/stdcommon.h" "src/ui/digidaw.h" "src/ui/registry.h" "src/ui/registry.cpp" "src/ui/digidaw.cpp" "src/audio/engine.cpp" "src/audio/common.h" "src/stdcommon.h" "src/audio/engine.h" "src/main.h" "src/main.cpp" "src/ui/audioengine.h" "src/ui/audioengine.cpp" "src/audio/mixer.cpp" "src/audio/mixer.h" "src/ui/audiomixer.h" "src/ui/audiomixer.cpp")
+add_executable (DigiDAW "src/ui/uimain.cpp" "src/ui/resources.cpp" "src/ui/mainwindow.cpp" "src/ui/mainwindow.h" "src/stdcommon.h" "src/ui/digidaw.h" "src/ui/registry.h" "src/ui/registry.cpp" "src/ui/digidaw.cpp" "src/audio/engine.cpp" "src/audio/common.h" "src/stdcommon.h" "src/audio/engine.h" "src/main.h" "src/main.cpp" "src/ui/audioengine.h" "src/ui/audioengine.cpp" "src/audio/mixer.cpp" "src/audio/mixer.h" "src/ui/audiomixer.h" "src/ui/audiomixer.cpp" "src/audio/trackstate.h" "src/audio/trackstate.cpp")
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(DigiDAW PRIVATE "-mavx")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_compile_options(DigiDAW PRIVATE "/arch:AVX")
+endif()
 
 set_property(TARGET DigiDAW PROPERTY CXX_STANDARD 20)
 

@@ -3,6 +3,7 @@
 namespace DigiDAW::Audio
 {
 	Engine::Engine(RtAudio::Api api)
+		: mixer(*this)
 	{
 		audioBackend = std::make_unique<RtAudio>(api);
 
@@ -31,6 +32,7 @@ namespace DigiDAW::Audio
 		if (currentInputDevice != -1) currentInputDevice = getFirstAvailableInputDevice();
 
 		currentBufferSize = 512;
+		realBufferSize = currentBufferSize;
 
 		resetSampleRate();
 	}
@@ -228,6 +230,13 @@ namespace DigiDAW::Audio
 		return currentBufferSize;
 	}
 
+	unsigned int Engine::getRealBufferSize()
+	{
+		if (isStreamOpen())
+			return realBufferSize;
+		else return currentBufferSize;
+	}
+
 	ReturnCode Engine::getSupportedSampleRates(std::vector<unsigned int>& sampleRates)
 	{
 		// Sanitize the devices and make sure they aren't -1 (aka None), if they are return the other one.
@@ -303,7 +312,7 @@ namespace DigiDAW::Audio
 	{
 		Engine* engine = (Engine*)userData;
 
-		if (!outputBuffer || engine->currentOutputDevice == -1) return 2;
+		if (!outputBuffer || engine->currentOutputDevice == -1) return 2; // Abort stream
 
 		float* outBuf = (float*)outputBuffer;
 		float* inBuf = (float*)inputBuffer;
@@ -357,6 +366,7 @@ namespace DigiDAW::Audio
 				currentSampleRate, 
 				&bufferSize, 
 				audioCallback, this, &options);
+		realBufferSize = bufferSize;
 
 		audioBackend->startStream();
 		mixer.updateCurrentTime(audioBackend->getStreamTime());

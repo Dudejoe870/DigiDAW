@@ -2,6 +2,7 @@
 
 #include "audio/common.h"
 
+#include "audio/trackstate.h"
 #include "audio/mixer.h"
 
 namespace DigiDAW::Audio
@@ -47,6 +48,8 @@ namespace DigiDAW::Audio
 		unsigned int currentSampleRate;
 		unsigned int currentBufferSize;
 
+		unsigned int realBufferSize;
+
 		void resetSampleRate();
 		AudioDevice getAudioDevice(unsigned int index);
 		void updateDevices();
@@ -64,6 +67,7 @@ namespace DigiDAW::Audio
 			RtAudioStreamStatus status, 
 			void* userData);
 	public:
+		TrackState trackState;
 		Mixer mixer;
 
 		Engine(RtAudio::Api api);
@@ -90,6 +94,8 @@ namespace DigiDAW::Audio
 
 		ReturnCode setCurrentBufferSize(unsigned int bufferSize);
 		unsigned int getCurrentBufferSize();
+
+		unsigned int getRealBufferSize();
 
 		ReturnCode getSupportedSampleRates(std::vector<unsigned int>& sampleRates);
 

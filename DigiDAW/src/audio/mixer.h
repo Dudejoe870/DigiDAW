@@ -2,8 +2,12 @@
 
 #include "audio/common.h"
 
+#include "audio/trackstate.h"
+
 namespace DigiDAW::Audio
 {
+	class Engine;
+
 	class Mixer
 	{
 	private:
@@ -11,49 +15,36 @@ namespace DigiDAW::Audio
 
 		double testToneStartTime;
 		double currentTime;
-	public:
-		class MixingState
+
+		Engine& audioEngine;
+
+		struct MixBuffer
 		{
-		public:
-			enum class ChannelType
+			float* buffer;
+
+			MixBuffer()
 			{
-				Mono,
-				Stereo
-			};
+				buffer = nullptr;
+			}
 
-			typedef unsigned long TrackIdentifier;
-			typedef unsigned long BusIdentifier;
-
-			struct Mixable
+			MixBuffer(unsigned int nFrames, unsigned int nChannels)
 			{
-				ChannelType type;
+				buffer = new float[nChannels * nFrames];
+			}
 
-				float gain;
-				float pan;
-			};
-
-			struct Track : Mixable
+			~MixBuffer()
 			{
-				// TODO: Track sends
-
-				BusIdentifier output;
-			};
-
-			struct Bus : Mixable
-			{
-				BusIdentifier busOutput;
-				unsigned int channelOutput[2]; // If busOutput is -1, this outputs to the current output device using the specified channels (both if Stereo, only the first one if Mono)
-			};
-		private:
-			std::unordered_map<TrackIdentifier, Track> tracks;
-			std::unordered_map<BusIdentifier, Bus> buses;
-		public:
-
+				if (buffer) delete[] buffer;
+			}
 		};
 
-		MixingState mixingState;
+		std::unordered_map<TrackState::TrackIdentifier, MixBuffer> trackBuffers;
+		std::unordered_map<TrackState::BusIdentifier, MixBuffer> busBuffers;
 
-		Mixer();
+		void updateTrackBuffers();
+		void updateBusBuffers();
+	public:
+		Mixer(Engine& audioEngine);
 
 		void mix(
 			float* outputBuffer,

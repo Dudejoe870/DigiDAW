@@ -7,11 +7,11 @@ DigiDAW is a Digital Audio Workstation focused on being easy to use, free, and c
 
 **[CURRENTLY VERY WORK IN PROGRESS, FEATURES COULD BE COMPLETELY NON-EXISTENT, BUGGY, OR BROKEN. PLEASE BE ADVISED]**
 
+> Note: This software only supports CPUs with AVX support. These are pretty much all CPUs released after 2011.
+
 ## Supported Audio Backends
 
 Thanks to the [rtaudio library](https://github.com/thestk/rtaudio), DigiDAW supports a variety of Audio Backends.
-
-#
 
 ### Windows
 

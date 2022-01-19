@@ -104,7 +104,7 @@ export class Settings extends Element {
     }
 
     getTestOutputButton() {
-        var html = `<button id="test-button" style="display: inline-block; position: absolute;" ${ AudioEngine.isStreamRunning ? "disabled" : "" }>Test</button>`;
+        var html = `<button id="test-button" style="display: inline-block; position: absolute;">Test</button>`;
 
         return html;
     }
@@ -197,7 +197,12 @@ export class Settings extends Element {
         this.patch(this.render());
 
         this.testTone = true;
-        setTimeout(() => { AudioMixer.endTestTone(); AudioEngine.pause(); this.patch(this.render()); this.testTone = false; }, 1000);
+        setTimeout(() => {
+            AudioMixer.endTestTone();
+            AudioEngine.pause();
+            this.patch(this.render());
+            this.testTone = false;
+        }, 1000);
     }
 
     ["on change at #api-dropdown"](event, dropdown) {

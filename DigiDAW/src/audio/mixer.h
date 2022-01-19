@@ -20,21 +20,15 @@ namespace DigiDAW::Audio
 
 		struct MixBuffer
 		{
-			float* buffer;
+			std::vector<float> buffer;
 
 			MixBuffer()
 			{
-				buffer = nullptr;
 			}
 
 			MixBuffer(unsigned int nFrames, unsigned int nChannels)
 			{
-				buffer = new float[nChannels * nFrames];
-			}
-
-			~MixBuffer()
-			{
-				if (buffer) delete[] buffer;
+				buffer.resize(nChannels * nFrames);
 			}
 		};
 
@@ -43,6 +37,11 @@ namespace DigiDAW::Audio
 
 		void updateTrackBuffers();
 		void updateBusBuffers();
+
+		void applyGain(float gain, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);
+		void applyStereoPanning(float pan, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);
+		void processTrack(std::vector<float>& trackInputBuffer, TrackState::TrackIdentifier track, unsigned int nFrames, unsigned int sampleRate);
+		void processBus(TrackState::BusIdentifier bus, unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate);
 	public:
 		Mixer(Engine& audioEngine);
 

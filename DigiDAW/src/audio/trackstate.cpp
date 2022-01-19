@@ -14,7 +14,7 @@ namespace DigiDAW::Audio
 
 	void TrackState::updateTracks()
 	{
-		std::vector<TrackIdentifier> identifiers(tracks.size());
+		std::vector<TrackIdentifier> identifiers;
 		for (auto& kv : tracks) identifiers.push_back(kv.first);
 
 		currentTracks = identifiers;
@@ -24,7 +24,7 @@ namespace DigiDAW::Audio
 
 	void TrackState::updateBuses()
 	{
-		std::vector<BusIdentifier> identifiers(buses.size());
+		std::vector<BusIdentifier> identifiers;
 		for (auto& kv : buses) identifiers.push_back(kv.first);
 
 		currentBuses = identifiers;
@@ -60,17 +60,17 @@ namespace DigiDAW::Audio
 		updateBuses();
 	}
 
-	TrackState::Track TrackState::getTrack(TrackIdentifier track)
+	TrackState::Track& TrackState::getTrack(TrackIdentifier track)
 	{
 		if (track == -1 || !tracks.contains(track))
-			return Track();
+			return defaultTrack;
 		return tracks[track];
 	}
 
-	TrackState::Bus TrackState::getBus(BusIdentifier bus)
+	TrackState::Bus& TrackState::getBus(BusIdentifier bus)
 	{
 		if (bus == -1 || !buses.contains(bus))
-			return Bus();
+			return defaultBus;
 		return buses[bus];
 	}
 

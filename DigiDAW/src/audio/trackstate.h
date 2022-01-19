@@ -23,11 +23,17 @@ namespace DigiDAW::Audio
 		struct BusOutput
 		{
 			BusIdentifier bus;
-			std::unordered_map<unsigned int, unsigned int> inputToOutputChannelMapping;
+			std::vector<std::vector<unsigned int>> inputChannelToOutputChannels;
 
-			BusOutput()
+			BusOutput(unsigned int nChannels)
 			{
 				this->bus = -1;
+			}
+
+			BusOutput(BusIdentifier bus, const std::vector<std::vector<unsigned int>>& outputChannels)
+			{
+				this->bus = bus;
+				this->inputChannelToOutputChannels = outputChannels;
 			}
 		};
 
@@ -46,24 +52,45 @@ namespace DigiDAW::Audio
 				this->gain = 0.0f;
 				this->pan = 0.0f;
 			}
+
+			Mixable(ChannelNumber nChannels, float gain, float pan, const std::vector<BusOutput>& outputs)
+			{
+				this->nChannels = nChannels;
+				this->gain = gain;
+				this->pan = pan;
+				this->outputs = outputs;
+			}
 		};
 
 		// A Track is simply a stream of audio with gain, panning, and VST effects / input (coming some day), plus the ability to output to any number of bus channels.
 		struct Track : Mixable
 		{
 			// TODO: Other track specific features.
+
+			Track()
+			{
+			}
+
+			Track(ChannelNumber nChannels, float gain, float pan, const std::vector<BusOutput>& outputs)
+				: Mixable(nChannels, gain, pan, outputs)
+			{
+			}
 		};
 
 		// A Bus is the same as a track except it can also recieve other tracks / buses as inputs + can output to the current output device / buffer (if exporting) 
 		// if specified (as well as output to other buses)
 		struct Bus : Mixable
 		{
-			unsigned int outputDeviceChannels[(unsigned int)ChannelNumber::MAX];
+			std::vector<std::vector<unsigned int>> inputChannelToDeviceOutputChannels;
 
 			Bus()
 			{
-				for (int i = 0; i < sizeof(outputDeviceChannels) / sizeof(int); ++i)
-					outputDeviceChannels[i] = -1;
+			}
+
+			Bus(ChannelNumber nChannels, float gain, float pan, const std::vector<BusOutput>& outputs, const std::vector<std::vector<unsigned int>>& deviceOutputs)
+				: Mixable(nChannels, gain, pan, outputs)
+			{
+				this->inputChannelToDeviceOutputChannels = deviceOutputs;
 			}
 		};
 	private:
@@ -79,6 +106,9 @@ namespace DigiDAW::Audio
 		std::vector<std::function<void()>> updateTracksCallbacks;
 		std::vector<std::function<void()>> updateBusesCallbacks;
 
+		Track defaultTrack;
+		Bus defaultBus;
+
 		void updateTracks();
 		void updateBuses();
 	public:
@@ -90,8 +120,8 @@ namespace DigiDAW::Audio
 		void removeTrack(TrackIdentifier track);
 		void removeBus(BusIdentifier bus);
 
-		Track getTrack(TrackIdentifier track);
-		Bus getBus(BusIdentifier bus);
+		Track& getTrack(TrackIdentifier track);
+		Bus& getBus(BusIdentifier bus);
 
 		const std::vector<TrackIdentifier>& getAllTracks();
 		const std::vector<BusIdentifier>& getAllBuses();

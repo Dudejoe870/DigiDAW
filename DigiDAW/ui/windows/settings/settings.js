@@ -207,6 +207,8 @@ export class Settings extends Element {
         this.componentUpdate({ currentPage: this.Pages.MidiEngine });
     }
 
+    testToneTimeout;
+
     ["on click at #test-button"](event, button) {
         AudioEngine.start();
 
@@ -214,7 +216,9 @@ export class Settings extends Element {
         this.patch(this.render());
 
         this.testTone = true;
-        setTimeout(() => {
+
+        clearTimeout(this.testToneTimeout);
+        this.testToneTimeout = setTimeout(() => {
             AudioMixer.endTestTone();
             AudioEngine.stop();
             this.patch(this.render());

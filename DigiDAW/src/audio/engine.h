@@ -48,8 +48,6 @@ namespace DigiDAW::Audio
 		unsigned int currentSampleRate;
 		unsigned int currentBufferSize;
 
-		unsigned int realBufferSize;
-
 		void resetSampleRate();
 		AudioDevice getAudioDevice(unsigned int index);
 		void updateDevices();
@@ -95,14 +93,12 @@ namespace DigiDAW::Audio
 		ReturnCode setCurrentBufferSize(unsigned int bufferSize);
 		unsigned int getCurrentBufferSize();
 
-		unsigned int getRealBufferSize();
-
 		ReturnCode getSupportedSampleRates(std::vector<unsigned int>& sampleRates);
 
+		ReturnCode openStream();
 		ReturnCode startEngine();
 
 		ReturnCode stopEngine();
-		ReturnCode pauseEngine();
 
 		bool isStreamOpen();
 		bool isStreamRunning();

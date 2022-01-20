@@ -27,8 +27,11 @@
 .lang-MidiEngineSettings:lang(en) { content: "MIDI Engine Settings"; }
 .lang-SettingsAPIBackend:lang(en) { content: "API Backend"; }
 .lang-SettingsOutputDevice:lang(en) { content: "Output Device"; }
+.lang-SettingsTestButton:lang(en) { content: "Test"; }
 .lang-SettingsInputDevice:lang(en) { content: "Input Device"; }
 .lang-SettingsSampleRate:lang(en) { content: "Sample rate"; }
+.lang-SettingsBufferSize:lang(en) { content: "Buffer size"; }
+.lang-SettingsSamples:lang(en) { content: "Samples"; }
 .lang-SettingsSelectOption:lang(en) { content: "Select an Option on the side to view the relevant options."; }
 .lang-DeviceSettings:lang(en) { content: "Device Settings"; }
 .lang-DeviceInfo:lang(en) { content: "Device Info"; }

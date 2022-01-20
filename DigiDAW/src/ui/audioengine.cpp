@@ -87,9 +87,4 @@ namespace DigiDAW::UI
 	{
 		returnCode = (int)pApp->audioEngine->stopEngine();
 	}
-
-	void AudioEngine::pause()
-	{
-		returnCode = (int)pApp->audioEngine->pauseEngine();
-	}
 }

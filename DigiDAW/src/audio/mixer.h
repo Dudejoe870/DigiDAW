@@ -35,15 +35,15 @@ namespace DigiDAW::Audio
 		std::unordered_map<TrackState::TrackIdentifier, MixBuffer> trackBuffers;
 		std::unordered_map<TrackState::BusIdentifier, MixBuffer> busBuffers;
 
-		void updateTrackBuffers();
-		void updateBusBuffers();
-
 		void applyGain(float gain, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);
 		void applyStereoPanning(float pan, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);
 		void processTrack(std::vector<float>& trackInputBuffer, TrackState::TrackIdentifier track, unsigned int nFrames, unsigned int sampleRate);
 		void processBus(TrackState::BusIdentifier bus, unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate);
 	public:
 		Mixer(Engine& audioEngine);
+
+		void updateTrackBuffers();
+		void updateBusBuffers();
 
 		void mix(
 			float* outputBuffer,

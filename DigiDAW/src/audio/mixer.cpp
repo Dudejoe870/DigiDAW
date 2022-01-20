@@ -30,7 +30,7 @@ namespace DigiDAW::Audio
 		for (const TrackState::TrackIdentifier& track : tracks)
 		{
 			TrackState::Track trackInfo = audioEngine.trackState.getTrack(track);
-			trackBuffers[track] = MixBuffer(audioEngine.getRealBufferSize(), (unsigned int)trackInfo.nChannels);
+			trackBuffers[track] = MixBuffer(audioEngine.getCurrentBufferSize(), (unsigned int)trackInfo.nChannels);
 		}
 	}
 
@@ -43,7 +43,7 @@ namespace DigiDAW::Audio
 		for (const TrackState::BusIdentifier& bus : buses)
 		{
 			TrackState::Bus busInfo = audioEngine.trackState.getBus(bus);
-			busBuffers[bus] = MixBuffer(audioEngine.getRealBufferSize(), (unsigned int)busInfo.nChannels);
+			busBuffers[bus] = MixBuffer(audioEngine.getCurrentBufferSize(), (unsigned int)busInfo.nChannels);
 		}
 	}
 
@@ -66,7 +66,7 @@ namespace DigiDAW::Audio
 
 		// Sine-law panning
 		float panning = (pan / 200.0f) + 0.5f;
-		float pidiv2 = pi / 2.0f;
+		float pidiv2 = (float)pi / 2.0f;
 		float rightAmplitude = std::sinf(panning * pidiv2);
 		float leftAmplitude = std::sinf((1.0f - panning) * pidiv2);
 
@@ -90,7 +90,7 @@ namespace DigiDAW::Audio
 		for (unsigned int channel = 0; channel < (unsigned int)trackInfo.nChannels; ++channel)
 		{
 			// TODO: Apply effects
-			for (int frame = 0; frame < nFrames; ++frame)
+			for (unsigned int frame = 0; frame < nFrames; ++frame)
 				outputBuffer[(channel * nFrames) + frame] = trackInputBuffer[(channel * nFrames) + frame];
 		}
 

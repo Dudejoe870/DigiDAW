@@ -17,11 +17,13 @@ namespace DigiDAW::Audio
 		}
 
 		initializeDevices();
+
+		openStream();
 	}
 
 	Engine::~Engine()
 	{
-		stopEngine();
+		audioBackend->closeStream();
 	}
 
 	void Engine::initializeDevices()
@@ -32,7 +34,6 @@ namespace DigiDAW::Audio
 		if (currentInputDevice != -1) currentInputDevice = getFirstAvailableInputDevice();
 
 		currentBufferSize = 512;
-		realBufferSize = currentBufferSize;
 
 		resetSampleRate();
 	}
@@ -170,27 +171,27 @@ namespace DigiDAW::Audio
 
 	ReturnCode Engine::setCurrentOutputDevice(unsigned int device)
 	{
-		stopEngine();
-
 		if (device != -1 && !currentDevices[device].info.probed)
 			return ReturnCode::Error;
 
 		currentOutputDevice = device;
 
 		resetSampleRate();
+
+		openStream();
 		return ReturnCode::Success;
 	}
 
 	ReturnCode Engine::setCurrentInputDevice(unsigned int device)
 	{
-		stopEngine();
-
 		if (device != -1 && !currentDevices[device].info.probed)
 			return ReturnCode::Error;
 
 		currentInputDevice = device;
 
 		resetSampleRate();
+
+		openStream();
 		return ReturnCode::Success;
 	}
 
@@ -206,9 +207,9 @@ namespace DigiDAW::Audio
 
 	ReturnCode Engine::setCurrentSampleRate(unsigned int sampleRate)
 	{
-		stopEngine();
 		currentSampleRate = sampleRate;
 
+		openStream();
 		return ReturnCode::Success;
 	}
 
@@ -219,22 +220,15 @@ namespace DigiDAW::Audio
 
 	ReturnCode Engine::setCurrentBufferSize(unsigned int bufferSize)
 	{
-		stopEngine();
 		currentBufferSize = bufferSize;
 
+		openStream();
 		return ReturnCode::Success;
 	}
 
 	unsigned int Engine::getCurrentBufferSize()
 	{
 		return currentBufferSize;
-	}
-
-	unsigned int Engine::getRealBufferSize()
-	{
-		if (isStreamOpen())
-			return realBufferSize;
-		else return currentBufferSize;
 	}
 
 	ReturnCode Engine::getSupportedSampleRates(std::vector<unsigned int>& sampleRates)
@@ -292,12 +286,14 @@ namespace DigiDAW::Audio
 
 	ReturnCode Engine::changeBackend(RtAudio::Api api)
 	{
-		stopEngine();
+		audioBackend->closeStream();
 		delete audioBackend.release();
 
 		audioBackend = std::make_unique<RtAudio>(api);
 
 		initializeDevices();
+
+		openStream();
 
 		return ReturnCode::Success;
 	}
@@ -326,17 +322,12 @@ namespace DigiDAW::Audio
 		return 0;
 	}
 
-	ReturnCode Engine::startEngine()
+	ReturnCode Engine::openStream()
 	{
-		if (isStreamOpen() && !isStreamRunning())
-		{
-			audioBackend->startStream();
-			mixer.updateCurrentTime(audioBackend->getStreamTime());
-			return ReturnCode::Success;
-		}
-
 		if (currentOutputDevice == -1)
 			return ReturnCode::Error;
+
+		if (isStreamOpen()) audioBackend->closeStream();
 
 		RtAudio::StreamParameters outputParams;
 		outputParams.deviceId = currentOutputDevice;
@@ -358,32 +349,37 @@ namespace DigiDAW::Audio
 		options.streamName = "main";
 
 		unsigned int bufferSize = currentBufferSize;
-		RtAudioErrorType streamError = 
+		RtAudioErrorType streamError =
 			audioBackend->openStream(
-				&outputParams, 
-				(currentInputDevice != -1 ? &inputParams : NULL), 
-				RTAUDIO_FLOAT32, 
-				currentSampleRate, 
-				&bufferSize, 
+				&outputParams,
+				(currentInputDevice != -1 ? &inputParams : NULL),
+				RTAUDIO_FLOAT32,
+				currentSampleRate,
+				&bufferSize,
 				audioCallback, this, &options);
-		realBufferSize = bufferSize;
-
-		audioBackend->startStream();
-		mixer.updateCurrentTime(audioBackend->getStreamTime());
 
 		if (streamError != RTAUDIO_NO_ERROR)
 			return ReturnCode::Error;
+
+		currentBufferSize = bufferSize;
+		mixer.updateTrackBuffers();
+		mixer.updateBusBuffers();
+
+		return ReturnCode::Success;
+	}
+
+	ReturnCode Engine::startEngine()
+	{
+		if (!isStreamOpen())
+			openStream();
+
+		audioBackend->startStream();
+		mixer.updateCurrentTime(audioBackend->getStreamTime());
 
 		return ReturnCode::Success;
 	}
 
 	ReturnCode Engine::stopEngine()
-	{
-		if (isStreamOpen()) audioBackend->closeStream();
-		return ReturnCode::Success;
-	}
-
-	ReturnCode Engine::pauseEngine()
 	{
 		if (isStreamRunning()) audioBackend->stopStream();
 		return ReturnCode::Success;

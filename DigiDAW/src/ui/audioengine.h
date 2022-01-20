@@ -83,7 +83,6 @@ namespace DigiDAW::UI
 
         void start();
         void stop();
-        void pause();
 
         SOM_PASSPORT_BEGIN(AudioEngine)
             SOM_FUNCS(
@@ -94,8 +93,7 @@ namespace DigiDAW::UI
                 SOM_FUNC(queryDevices),
                 SOM_FUNC(getSupportedSampleRates),
                 SOM_FUNC(start),
-                SOM_FUNC(stop),
-                SOM_FUNC(pause))
+                SOM_FUNC(stop))
             SOM_PROPS(
                 SOM_RO_PROP(audioFormats),
                 SOM_RO_PROP(returnCode),

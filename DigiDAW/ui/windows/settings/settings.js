@@ -77,6 +77,16 @@ export class Settings extends Element {
         return html;
     }
 
+    getBufferSizeDropdown() {
+        var html = "";
+
+        for (let size = 64; size <= 4096; size *= 2) {
+            html += `<option id="buffer-${size}" ${AudioEngine.bufferSize == size ? "selected" : ""}>${size} <span class="lang-SettingsSamples"></span></option>`;
+        }
+
+        return html;
+    }
+
     getDeviceInfoForDevice(device) {
         var html = "";
 
@@ -104,7 +114,7 @@ export class Settings extends Element {
     }
 
     getTestOutputButton() {
-        var html = `<button id="test-button" style="display: inline-block; position: absolute;">Test</button>`;
+        var html = `<button id="test-button" style="display: inline-block; position: absolute;" class="lang-SettingsTestButton"></button>`;
 
         return html;
     }
@@ -142,6 +152,13 @@ export class Settings extends Element {
                 <div>
                     <label class="lang-SettingsSampleRate"></label>
                     <select type="dropdown" id="samplerate-dropdown" state-html={ this.getSampleRateDropdown() }>
+                    </select>
+                </div>
+                <br />
+
+                <div>
+                    <label class="lang-SettingsBufferSize"></label>
+                    <select type="dropdown" id="buffersize-dropdown" state-html={ this.getBufferSizeDropdown() }>
                     </select>
                 </div>
                 <hr />
@@ -199,7 +216,7 @@ export class Settings extends Element {
         this.testTone = true;
         setTimeout(() => {
             AudioMixer.endTestTone();
-            AudioEngine.pause();
+            AudioEngine.stop();
             this.patch(this.render());
             this.testTone = false;
         }, 1000);
@@ -237,6 +254,15 @@ export class Settings extends Element {
         var samplerate = parseInt(option.innerText); // Get the sample rate from the text content.
 
         AudioEngine.sampleRate = samplerate;
+
+        this.patch(this.render());
+    }
+
+    ["on change at #buffersize-dropdown"](event, dropdown) {
+        var option = dropdown.$("option:current");
+        var bufferSize = parseInt(option.id.substring(7));
+
+        AudioEngine.bufferSize = bufferSize;
 
         this.patch(this.render());
     }

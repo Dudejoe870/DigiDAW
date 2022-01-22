@@ -12,18 +12,16 @@ namespace DigiDAW::Audio
 
 		for (RtAudio::Api api : compiledAPIs)
 		{
-			RtAudio testAudio(api);
-			if (testAudio.getDeviceCount() > 0) supportedAPIs.push_back(api);
+			RtAudio tempAudio(api);
+			if (tempAudio.getDeviceCount() > 0) supportedAPIs.push_back(api);
 		}
 
 		initializeDevices();
-
-		openStream();
 	}
 
 	Engine::~Engine()
 	{
-		audioBackend->closeStream();
+		if (audioBackend->isStreamOpen()) audioBackend->closeStream();
 	}
 
 	void Engine::initializeDevices()
@@ -35,7 +33,7 @@ namespace DigiDAW::Audio
 
 		currentBufferSize = 512;
 
-		resetSampleRate();
+		resetSampleRate(); // Also opens stream
 	}
 
 	unsigned int Engine::getFirstAvailableInputDevice()
@@ -75,6 +73,11 @@ namespace DigiDAW::Audio
 			currentDevices.push_back(getAudioDevice(i));
 	}
 
+	Engine::AudioDevice Engine::getAudioDevice(unsigned int index)
+	{
+		return Engine::AudioDevice(audioBackend->getDeviceInfo(index), audioBackend->getCurrentApi(), index);
+	}
+
 	std::vector<Engine::AudioDevice> Engine::getDevices()
 	{
 		return currentDevices;
@@ -88,11 +91,6 @@ namespace DigiDAW::Audio
 	std::string Engine::getAPIName(RtAudio::Api api)
 	{
 		return RtAudio::getApiName(api);
-	}
-
-	Engine::AudioDevice Engine::getAudioDevice(unsigned int index)
-	{
-		return Engine::AudioDevice(audioBackend->getDeviceInfo(index), audioBackend->getCurrentApi(), index);
 	}
 
 	void Engine::resetSampleRate()
@@ -233,25 +231,35 @@ namespace DigiDAW::Audio
 
 	ReturnCode Engine::getSupportedSampleRates(std::vector<unsigned int>& sampleRates)
 	{
+		return getSupportedSampleRates(sampleRates, currentOutputDevice, currentInputDevice);
+	}
+
+	ReturnCode Engine::getSupportedSampleRates(std::vector<unsigned int>& sampleRates, unsigned int outputDevice, unsigned int inputDevice)
+	{
 		// Sanitize the devices and make sure they aren't -1 (aka None), if they are return the other one.
-		if (currentOutputDevice == -1 && currentInputDevice != -1)
+		if (outputDevice == -1 && inputDevice != -1)
 		{
-			sampleRates = currentDevices[currentInputDevice].info.sampleRates;
+			sampleRates = currentDevices[inputDevice].info.sampleRates;
 			return ReturnCode::Success;
 		}
-		else if (currentInputDevice == -1 && currentOutputDevice != -1)
+		else if (inputDevice == -1 && outputDevice != -1)
 		{
-			sampleRates = currentDevices[currentOutputDevice].info.sampleRates;
+			sampleRates = currentDevices[outputDevice].info.sampleRates;
 			return ReturnCode::Success;
 		}
-		else if (currentInputDevice == -1 && currentOutputDevice == -1) // If we don't have any devices selected, return error.
+		else if (inputDevice == -1 && outputDevice == -1) // If we don't have any devices selected, return error.
 		{
 			sampleRates.clear();
 			return ReturnCode::Error;
 		}
 
-		RtAudio::DeviceInfo outputInfo = currentDevices[currentOutputDevice].info;
-		RtAudio::DeviceInfo inputInfo = currentDevices[currentInputDevice].info;
+		return getSupportedSampleRates(sampleRates, currentDevices[outputDevice], currentDevices[inputDevice]);
+	}
+
+	ReturnCode Engine::getSupportedSampleRates(std::vector<unsigned int>& sampleRates, Engine::AudioDevice outputDevice, Engine::AudioDevice inputDevice)
+	{
+		RtAudio::DeviceInfo outputInfo = outputDevice.info;
+		RtAudio::DeviceInfo inputInfo = inputDevice.info;
 
 		// Make sure we're able to probe the devices, if not return the one we are able to probe.
 		if (!outputInfo.probed && inputInfo.probed)
@@ -292,8 +300,6 @@ namespace DigiDAW::Audio
 		audioBackend = std::make_unique<RtAudio>(api);
 
 		initializeDevices();
-
-		openStream();
 
 		return ReturnCode::Success;
 	}
@@ -370,11 +376,18 @@ namespace DigiDAW::Audio
 
 	ReturnCode Engine::startEngine()
 	{
-		if (!isStreamOpen())
-			openStream();
+		if (!isStreamRunning())
+		{
+			if (!isStreamOpen())
+			{
+				ReturnCode streamError = openStream();
+				if (streamError != ReturnCode::Success)
+					return streamError;
+			}
 
-		audioBackend->startStream();
-		mixer.updateCurrentTime(audioBackend->getStreamTime());
+			audioBackend->startStream();
+			mixer.updateCurrentTime(audioBackend->getStreamTime());
+		}
 
 		return ReturnCode::Success;
 	}

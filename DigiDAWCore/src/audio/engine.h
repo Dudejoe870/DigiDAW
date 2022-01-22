@@ -94,6 +94,8 @@ namespace DigiDAW::Audio
 		unsigned int getCurrentBufferSize();
 
 		ReturnCode getSupportedSampleRates(std::vector<unsigned int>& sampleRates);
+		ReturnCode getSupportedSampleRates(std::vector<unsigned int>& sampleRates, unsigned int outputDevice, unsigned int inputDevice);
+		ReturnCode getSupportedSampleRates(std::vector<unsigned int>& sampleRates, AudioDevice outputDevice, AudioDevice inputDevice);
 
 		ReturnCode openStream();
 		ReturnCode startEngine();

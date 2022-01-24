@@ -33,10 +33,10 @@ void Settings::updateControls()
         }
 
         ui->buffersize_combo->clear();
-        for (unsigned int samplerate = 32; samplerate <= 4096; samplerate *= 2)
+        for (unsigned int buffersize = 32; buffersize <= 4096; buffersize *= 2)
         {
-            ui->buffersize_combo->addItem(QString::number(samplerate) + " Samples", samplerate);
-            if (samplerate == mainApp->audioEngine->getCurrentBufferSize())
+            ui->buffersize_combo->addItem(QString::number(buffersize) + " Samples", buffersize);
+            if (buffersize == mainApp->audioEngine->getCurrentBufferSize())
                 ui->buffersize_combo->setCurrentIndex(ui->buffersize_combo->count() - 1);
         }
 
@@ -50,11 +50,11 @@ void Settings::applySettings()
 {
     this->setCursor(QCursor(Qt::WaitCursor));
 
-    int currentOutputDevice = getCurrentSelectedOutputDevice();
+    unsigned int currentOutputDevice = (unsigned int)getCurrentSelectedOutputDevice();
     if (mainApp->audioEngine->getCurrentOutputDevice() != currentOutputDevice)
         mainApp->audioEngine->setCurrentOutputDevice(currentOutputDevice);
 
-    int currentInputDevice = getCurrentSelectedInputDevice();
+    unsigned int currentInputDevice = (unsigned int)getCurrentSelectedInputDevice();
     if (mainApp->audioEngine->getCurrentInputDevice() != currentInputDevice)
         mainApp->audioEngine->setCurrentInputDevice(currentInputDevice);
 
@@ -69,13 +69,10 @@ void Settings::applySettings()
     this->unsetCursor();
 }
 
-void Settings::updateApi()
+void Settings::updateDevices()
 {
-    RtAudio::Api currentApi = getCurrentSelectedApi();
-    if (mainApp->audioEngine->getCurrentAPI() != currentApi)
-        mainApp->audioEngine->changeBackend(currentApi);
-
     std::vector<DigiDAW::Audio::Engine::AudioDevice> devices = mainApp->audioEngine->getDevices();
+    RtAudio::Api currentApi = mainApp->audioEngine->getCurrentAPI();
     RtAudio::Api selectedApi = getCurrentSelectedApi();
 
     ui->output_combo->clear();
@@ -111,22 +108,52 @@ void Settings::updateApi()
 
 void Settings::updateDeviceDependantControls()
 {
+    unsigned int currentOutputDevice = getCurrentSelectedOutputDevice();
+    unsigned int currentInputDevice = getCurrentSelectedInputDevice();
+
+    std::vector<DigiDAW::Audio::Engine::AudioDevice> devices = mainApp->audioEngine->getDevices();
+
     std::vector<unsigned int> supportedSampleRates;
-    mainApp->audioEngine->getSupportedSampleRates(supportedSampleRates, getCurrentSelectedOutputDevice(), getCurrentSelectedInputDevice());
+    mainApp->audioEngine->getSupportedSampleRates(supportedSampleRates, currentOutputDevice, currentInputDevice);
 
     ui->samplerate_combo->clear();
+    bool containsCurrentSampleRate = false;
     for (unsigned int sampleRate : supportedSampleRates)
     {
         ui->samplerate_combo->addItem(QString::number(sampleRate) + "hz", sampleRate);
         if (mainApp->audioEngine->getCurrentSampleRate() == sampleRate)
+        {
             ui->samplerate_combo->setCurrentIndex(ui->samplerate_combo->count() - 1);
+            containsCurrentSampleRate = true;
+        }
     }
+    if (!containsCurrentSampleRate) ui->samplerate_combo->setCurrentIndex(ui->samplerate_combo->count() - 1);
+
+    if (currentOutputDevice != -1)
+    {
+        DigiDAW::Audio::Engine::AudioDevice& device = devices[currentOutputDevice];
+        ui->output_combo->setToolTip(
+            "Output Channels: " + QString::number(device.info.outputChannels) + 
+            "\nInput Channels: " + QString::number(device.info.inputChannels) +
+            "\nPreferred Sample Rate: " + QString::number(device.info.preferredSampleRate));
+    }
+    else ui->output_combo->setToolTip("None");
+
+    if (currentInputDevice != -1)
+    {
+        DigiDAW::Audio::Engine::AudioDevice& device = devices[currentInputDevice];
+        ui->input_combo->setToolTip(
+            "Output Channels: " + QString::number(device.info.outputChannels) +
+            "\nInput Channels: " + QString::number(device.info.inputChannels) +
+            "\nPreferred Sample Rate: " + QString::number(device.info.preferredSampleRate));
+    }
+    else ui->input_combo->setToolTip("None");
 }
 
 void Settings::showEvent(QShowEvent* event)
 {
     updateControls();
-    updateApi();
+    updateDevices();
 }
 
 void Settings::on_buttonBox_clicked(QAbstractButton* button)
@@ -157,11 +184,19 @@ void Settings::on_test_button_clicked()
 void Settings::on_tabWidget_currentChanged(int index)
 {
     updateControls();
+    updateDevices();
 }
 
 void Settings::on_api_combo_currentIndexChanged(int index)
 {
-    if (!updatingControls) updateApi();
+    if (!updatingControls)
+    {
+        RtAudio::Api currentApi = getCurrentSelectedApi();
+        if (mainApp->audioEngine->getCurrentAPI() != currentApi)
+            mainApp->audioEngine->changeBackend(currentApi);
+
+        updateDevices();
+    }
 }
 
 void Settings::on_output_combo_currentIndexChanged(int index)

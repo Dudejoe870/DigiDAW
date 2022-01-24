@@ -23,7 +23,7 @@ public:
 
     void applySettings();
 
-    void updateApi();
+    void updateDevices();
 
     void updateDeviceDependantControls();
 

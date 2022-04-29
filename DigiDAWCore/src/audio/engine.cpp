@@ -33,6 +33,7 @@ namespace DigiDAW::Audio
 
 		currentBufferSize = 512;
 
+		GetSupportedSampleRates(currentSupportedSampleRates);
 		ResetSampleRate(); // Also opens stream
 	}
 
@@ -175,6 +176,7 @@ namespace DigiDAW::Audio
 		currentOutputDevice = device;
 
 		ResetSampleRate();
+		GetSupportedSampleRates(currentSupportedSampleRates);
 
 		OpenStream();
 		return ReturnCode::Success;
@@ -188,6 +190,7 @@ namespace DigiDAW::Audio
 		currentInputDevice = device;
 
 		ResetSampleRate();
+		GetSupportedSampleRates(currentSupportedSampleRates);
 
 		OpenStream();
 		return ReturnCode::Success;
@@ -278,6 +281,8 @@ namespace DigiDAW::Audio
 			return ReturnCode::Error;
 		}
 
+		sampleRates.clear();
+
 		// Get the common sample rates between the two devices.
 		std::vector<unsigned int> outRates = outputInfo.sampleRates;
 		std::vector<unsigned int> inRates = inputInfo.sampleRates;
@@ -290,6 +295,11 @@ namespace DigiDAW::Audio
 			std::back_inserter(sampleRates));
 
 		return ReturnCode::Success;
+	}
+
+	std::vector<unsigned int> Engine::GetCurrentSupportedSampleRates()
+	{
+		return currentSupportedSampleRates;
 	}
 
 	ReturnCode Engine::ChangeBackend(RtAudio::Api api)

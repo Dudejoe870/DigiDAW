@@ -37,6 +37,8 @@ namespace DigiDAW::Audio
 
 		std::vector<AudioDevice> currentDevices;
 
+		std::vector<unsigned int> currentSupportedSampleRates;
+
 		/* 
 			Note: We may want to support multiple input and output devices in the future.
 			However, this would require multiple instances of RtAudio to open multiple streams.
@@ -96,6 +98,8 @@ namespace DigiDAW::Audio
 		ReturnCode GetSupportedSampleRates(std::vector<unsigned int>& sampleRates);
 		ReturnCode GetSupportedSampleRates(std::vector<unsigned int>& sampleRates, unsigned int outputDevice, unsigned int inputDevice);
 		ReturnCode GetSupportedSampleRates(std::vector<unsigned int>& sampleRates, AudioDevice outputDevice, AudioDevice inputDevice);
+
+		std::vector<unsigned int> GetCurrentSupportedSampleRates();
 
 		ReturnCode OpenStream();
 		ReturnCode StartEngine();

@@ -11,7 +11,7 @@ DigiDAW is a Digital Audio Workstation focused on being easy to use, free, and c
 
 ## Supported Audio Backends
 
-Thanks to the [rtaudio library](https://github.com/thestk/rtaudio), DigiDAW supports a variety of Audio Backends.
+Thanks to [rtaudio](https://github.com/thestk/rtaudio), DigiDAW supports a variety of Audio Backends.
 
 ### Windows
 
@@ -38,7 +38,9 @@ Thanks to the [rtaudio library](https://github.com/thestk/rtaudio), DigiDAW supp
 ### Common
 
 The common dependencies between all platforms are
+- OpenGL 3.0
 - [GLFW](https://www.glfw.org) (Included already as a git submodule)
+- [fmt](https://github.com/fmtlib/fmt) (Included already as a git submodule)
 - [ImGUI](https://github.com/ocornut/imgui) (Included already in the source) 
 - [rtaudio](https://github.com/thestk/rtaudio) (Included already as a git submodule)
 

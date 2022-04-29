@@ -14,6 +14,7 @@
 #include <GLFW/glfw3.h>
 
 #include "ui.h"
+#include "res/resources.h"
 
 using namespace DigiDAW::UI;
 
@@ -127,6 +128,12 @@ int main()
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != NULL);
+
+    ImFontConfig fontConfig;
+    fontConfig.FontDataOwnedByAtlas = false;
+    io.Fonts->AddFontFromMemoryTTF(
+        (void*)DigiDAWUI::Resources::poppins_light_ttf, 
+        DigiDAWUI::Resources::poppins_light_ttf_size, 19.0f, &fontConfig);
 
     UI ui(audioEngine);
 

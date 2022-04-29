@@ -5,6 +5,7 @@
 #include <audio/engine.h>
 
 #include <memory>
+#include <string>
 
 namespace DigiDAW::UI
 {

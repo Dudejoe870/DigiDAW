@@ -48,16 +48,16 @@ namespace DigiDAW::Audio
 		unsigned int currentSampleRate;
 		unsigned int currentBufferSize;
 
-		void resetSampleRate();
-		AudioDevice getAudioDevice(unsigned int index);
-		void updateDevices();
+		void ResetSampleRate();
+		AudioDevice GetAudioDevice(unsigned int index);
+		void UpdateDevices();
 
-		unsigned int getFirstAvailableInputDevice();
-		unsigned int getFirstAvailableOutputDevice();
+		unsigned int GetFirstAvailableInputDevice();
+		unsigned int GetFirstAvailableOutputDevice();
 
-		void initializeDevices();
+		void InitializeDevices();
 
-		static int audioCallback(
+		static int AudioCallback(
 			void* outputBuffer, 
 			void* inputBuffer, 
 			unsigned int nFrames, 
@@ -71,38 +71,38 @@ namespace DigiDAW::Audio
 		Engine(RtAudio::Api api);
 		~Engine();
 
-		std::vector<RtAudio::Api> getSupportedAPIs();
-		RtAudio::Api getCurrentAPI();
+		std::vector<RtAudio::Api> GetSupportedAPIs();
+		RtAudio::Api GetCurrentAPI();
 
-		ReturnCode changeBackend(RtAudio::Api api);
+		ReturnCode ChangeBackend(RtAudio::Api api);
 
-		std::vector<AudioDevice> getDevices();
+		std::vector<AudioDevice> GetDevices();
 
-		std::string getAPIDisplayName(RtAudio::Api api);
-		std::string getAPIName(RtAudio::Api api);
+		std::string GetAPIDisplayName(RtAudio::Api api);
+		std::string GetAPIName(RtAudio::Api api);
 
-		ReturnCode setCurrentOutputDevice(unsigned int device);
-		ReturnCode setCurrentInputDevice(unsigned int device);
+		ReturnCode SetCurrentOutputDevice(unsigned int device);
+		ReturnCode SetCurrentInputDevice(unsigned int device);
 
-		unsigned int getCurrentOutputDevice();
-		unsigned int getCurrentInputDevice();
+		unsigned int GetCurrentOutputDevice();
+		unsigned int GetCurrentInputDevice();
 
-		ReturnCode setCurrentSampleRate(unsigned int sampleRate);
-		unsigned int getCurrentSampleRate();
+		ReturnCode SetCurrentSampleRate(unsigned int sampleRate);
+		unsigned int GetCurrentSampleRate();
 
-		ReturnCode setCurrentBufferSize(unsigned int bufferSize);
-		unsigned int getCurrentBufferSize();
+		ReturnCode SetCurrentBufferSize(unsigned int bufferSize);
+		unsigned int GetCurrentBufferSize();
 
-		ReturnCode getSupportedSampleRates(std::vector<unsigned int>& sampleRates);
-		ReturnCode getSupportedSampleRates(std::vector<unsigned int>& sampleRates, unsigned int outputDevice, unsigned int inputDevice);
-		ReturnCode getSupportedSampleRates(std::vector<unsigned int>& sampleRates, AudioDevice outputDevice, AudioDevice inputDevice);
+		ReturnCode GetSupportedSampleRates(std::vector<unsigned int>& sampleRates);
+		ReturnCode GetSupportedSampleRates(std::vector<unsigned int>& sampleRates, unsigned int outputDevice, unsigned int inputDevice);
+		ReturnCode GetSupportedSampleRates(std::vector<unsigned int>& sampleRates, AudioDevice outputDevice, AudioDevice inputDevice);
 
-		ReturnCode openStream();
-		ReturnCode startEngine();
+		ReturnCode OpenStream();
+		ReturnCode StartEngine();
 
-		ReturnCode stopEngine();
+		ReturnCode StopEngine();
 
-		bool isStreamOpen();
-		bool isStreamRunning();
+		bool IsStreamOpen();
+		bool IsStreamRunning();
 	};
 }

@@ -12,6 +12,6 @@ endif()
 
 set_property(TARGET DigiDAWCore PROPERTY CXX_STANDARD 20)
 
-target_link_libraries(DigiDAWCore rtaudio)
+target_link_libraries(DigiDAWCore PUBLIC rtaudio)
 
 target_include_directories(DigiDAWCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}../rtaudio")

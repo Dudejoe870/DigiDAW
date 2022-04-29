@@ -17,42 +17,42 @@ namespace DigiDAW::Audio
 		this->testToneStartTime = 0.0;
 		this->currentTime = 0.0;
 
-		audioEngine.trackState.registerUpdateTracksHandler([=]() { updateTrackBuffers(); });
-		audioEngine.trackState.registerUpdateBusesHandler ([=]() { updateBusBuffers(); });
+		audioEngine.trackState.RegisterUpdateTracksHandler([=]() { UpdateTrackBuffers(); });
+		audioEngine.trackState.RegisterUpdateBusesHandler ([=]() { UpdateBusBuffers(); });
 	}
 
-	void Mixer::updateTrackBuffers()
+	void Mixer::UpdateTrackBuffers()
 	{
-		const std::vector<TrackState::TrackIdentifier>& tracks = audioEngine.trackState.getAllTracks();
+		const std::vector<TrackState::TrackIdentifier>& tracks = audioEngine.trackState.GetAllTracks();
 
 		trackBuffers.clear();
 
 		for (const TrackState::TrackIdentifier& track : tracks)
 		{
-			TrackState::Track trackInfo = audioEngine.trackState.getTrack(track);
-			trackBuffers[track] = MixBuffer(audioEngine.getCurrentBufferSize(), (unsigned int)trackInfo.nChannels);
+			TrackState::Track trackInfo = audioEngine.trackState.GetTrack(track);
+			trackBuffers[track] = MixBuffer(audioEngine.GetCurrentBufferSize(), (unsigned int)trackInfo.nChannels);
 		}
 	}
 
-	void Mixer::updateBusBuffers()
+	void Mixer::UpdateBusBuffers()
 	{
-		const std::vector<TrackState::BusIdentifier>& buses = audioEngine.trackState.getAllBuses();
+		const std::vector<TrackState::BusIdentifier>& buses = audioEngine.trackState.GetAllBuses();
 
 		busBuffers.clear();
 
 		for (const TrackState::BusIdentifier& bus : buses)
 		{
-			TrackState::Bus busInfo = audioEngine.trackState.getBus(bus);
-			busBuffers[bus] = MixBuffer(audioEngine.getCurrentBufferSize(), (unsigned int)busInfo.nChannels);
+			TrackState::Bus busInfo = audioEngine.trackState.GetBus(bus);
+			busBuffers[bus] = MixBuffer(audioEngine.GetCurrentBufferSize(), (unsigned int)busInfo.nChannels);
 		}
 	}
 
-	void Mixer::updateCurrentTime(double time)
+	void Mixer::UpdateCurrentTime(double time)
 	{
 		this->currentTime = time;
 	}
 
-	void Mixer::applyGain(float gain, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames)
+	void Mixer::ApplyGain(float gain, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames)
 	{
 		// TODO: Vectorize this
 		float amplitudeFactor = std::powf(10.0f, gain / 20.0f); // Perhaps use a lookup table with linear interpolation for realtime mixing? (can calculate in realtime for extra accuracy when exporting)
@@ -60,7 +60,7 @@ namespace DigiDAW::Audio
 			buffer[i] = amplitudeFactor * buffer[i];
 	}
 
-	void Mixer::applyStereoPanning(float pan, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames)
+	void Mixer::ApplyStereoPanning(float pan, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames)
 	{
 		if (nChannels != 2) return;
 
@@ -78,9 +78,9 @@ namespace DigiDAW::Audio
 		}
 	}
 
-	void Mixer::processTrack(std::vector<float>& trackInputBuffer, TrackState::TrackIdentifier track, unsigned int nFrames, unsigned int sampleRate)
+	void Mixer::ProcessTrack(std::vector<float>& trackInputBuffer, TrackState::TrackIdentifier track, unsigned int nFrames, unsigned int sampleRate)
 	{
-		TrackState::Track trackInfo = audioEngine.trackState.getTrack(track);
+		TrackState::Track trackInfo = audioEngine.trackState.GetTrack(track);
 		if (trackInfo.outputs.empty()) return;
 
 		if (!trackBuffers.contains(track)) return;
@@ -97,10 +97,10 @@ namespace DigiDAW::Audio
 		// TODO: Support Surround Panning
 		// Apply panning
 		if (trackInfo.nChannels == TrackState::ChannelNumber::Stereo)
-			applyStereoPanning(trackInfo.pan, outputBuffer, (unsigned int)trackInfo.nChannels, nFrames);
+			ApplyStereoPanning(trackInfo.pan, outputBuffer, (unsigned int)trackInfo.nChannels, nFrames);
 
 		// Apply gain
-		applyGain(trackInfo.gain, outputBuffer, (unsigned int)trackInfo.nChannels, nFrames);
+		ApplyGain(trackInfo.gain, outputBuffer, (unsigned int)trackInfo.nChannels, nFrames);
 
 		// TODO: Vectorize this
 		// Send out to buses
@@ -119,9 +119,9 @@ namespace DigiDAW::Audio
 		}
 	}
 
-	void Mixer::processBus(TrackState::BusIdentifier bus, unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate)
+	void Mixer::ProcessBus(TrackState::BusIdentifier bus, unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate)
 	{
-		TrackState::Bus busInfo = audioEngine.trackState.getBus(bus);
+		TrackState::Bus busInfo = audioEngine.trackState.GetBus(bus);
 		if (busInfo.outputs.empty() && busInfo.inputChannelToDeviceOutputChannels.empty()) return;
 
 		if (!busBuffers.contains(bus)) return;
@@ -133,10 +133,10 @@ namespace DigiDAW::Audio
 		// TODO: Support Surround Panning
 		// Apply panning
 		if (busInfo.nChannels == TrackState::ChannelNumber::Stereo)
-			applyStereoPanning(busInfo.pan, outputBuffer, (unsigned int)busInfo.nChannels, nFrames);
+			ApplyStereoPanning(busInfo.pan, outputBuffer, (unsigned int)busInfo.nChannels, nFrames);
 
 		// Apply gain
-		applyGain(busInfo.gain, outputBuffer, (unsigned int)busInfo.nChannels, nFrames);
+		ApplyGain(busInfo.gain, outputBuffer, (unsigned int)busInfo.nChannels, nFrames);
 
 		// TODO: Vectorize this
 		// Send out to buses
@@ -155,7 +155,7 @@ namespace DigiDAW::Audio
 		}
 	}
 
-	void Mixer::mix(
+	void Mixer::Mix(
 		float* outputBuffer,
 		float* inputBuffer, 
 		double time, 
@@ -166,8 +166,8 @@ namespace DigiDAW::Audio
 
 		if (!doTestTone)
 		{
-			const std::vector<TrackState::TrackIdentifier>& tracks = audioEngine.trackState.getAllTracks();
-			const std::vector<TrackState::BusIdentifier>& buses = audioEngine.trackState.getAllBuses();
+			const std::vector<TrackState::TrackIdentifier>& tracks = audioEngine.trackState.GetAllTracks();
+			const std::vector<TrackState::BusIdentifier>& buses = audioEngine.trackState.GetAllBuses();
 
 			// Currently we'll use noise for track inputs (for testing)
 			std::vector<float> monoOutput;
@@ -177,21 +177,21 @@ namespace DigiDAW::Audio
 			// Zero out bus buffers
 			for (const TrackState::BusIdentifier& bus : buses)
 			{
-				TrackState::Bus busInfo = audioEngine.trackState.getBus(bus);
+				TrackState::Bus busInfo = audioEngine.trackState.GetBus(bus);
 				std::memset(busBuffers[bus].buffer.data(), 0, ((unsigned int)busInfo.nChannels * nFrames) * sizeof(float));
 			}
 
 			// Process Tracks
 			for (const TrackState::TrackIdentifier& track : tracks) 
-				processTrack(monoOutput, track, nFrames, sampleRate);
+				ProcessTrack(monoOutput, track, nFrames, sampleRate);
 			// Process Buses
 			for (const TrackState::BusIdentifier& bus : buses)
-				processBus(bus, nFrames, nOutChannels, sampleRate);
+				ProcessBus(bus, nFrames, nOutChannels, sampleRate);
 
 			// Send out to output
 			for (const TrackState::BusIdentifier& bus : buses)
 			{
-				TrackState::Bus busInfo = audioEngine.trackState.getBus(bus);
+				TrackState::Bus busInfo = audioEngine.trackState.GetBus(bus);
 				// Send out to output device / buffer
 				for (unsigned int channel = 0; channel < (unsigned int)busInfo.nChannels; ++channel)
 				{
@@ -218,13 +218,13 @@ namespace DigiDAW::Audio
 		}
 	}
 
-	void Mixer::startTestTone()
+	void Mixer::StartTestTone()
 	{
 		testToneStartTime = currentTime;
 		doTestTone = true;
 	}
 
-	void Mixer::endTestTone()
+	void Mixer::EndTestTone()
 	{
 		testToneStartTime = 0.0;
 		doTestTone = false;

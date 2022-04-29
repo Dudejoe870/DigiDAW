@@ -38,12 +38,13 @@ Thanks to the [rtaudio library](https://github.com/thestk/rtaudio), DigiDAW supp
 ### Common
 
 The common dependencies between all platforms are
-- [Qt](https://www.qt.io/)
+- [GLFW](https://www.glfw.org) (Included already as a git submodule)
+- [ImGUI](https://github.com/ocornut/imgui) (Included already in the source) 
 - [rtaudio](https://github.com/thestk/rtaudio) (Included already as a git submodule)
 
 ### Linux
 
-- (Audio Backends) Jack/ALSA/PulseAudio
+- [Jack](https://jackaudio.org)/[ALSA](https://www.alsa-project.org/wiki/Main_Page)/[PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/) (At least one of these is required for audio to be functional)
 
 ## Building
 
@@ -62,15 +63,6 @@ To clone this repository, choose a new folder where you will store the resposito
 Run the command ```git clone https://github.com/Dudejoe870/DigiDAW.git --recursive ./```
 this will clone the git respository into the folder you opened the git bash in.
 
-### Qt
-
-To install Qt go [here](https://www.qt.io/download-qt-installer).
-Go through the installer and make sure to check Qt-6.2.2
-
-After installing, make an environment variable called QTDIR and set it to ``C:\Qt\6.2.2\msvc2019_64``.
-
-Then add to your PATH environment variable ``%QTDIR%/bin`` and ``%QTDIR%/lib``.
-
 ### Visual Studio 2022
 
 The next thing you'll want is Visual Studio 2022 (Note: Visual Studio 2019 should also probably work if you'd rather use that, going back further than that however is unsupported), 
@@ -83,10 +75,9 @@ Once you're here, you should simply be able to click the green arrow at the top 
 
 ## Linux
 
-Linux building hasn't been tested for the current Qt build system. 
-It should be possible, but the scripts may need to be altered to work on Linux.
+Linux building hasn't been tested yet.
 
-## MacOS (x86 only)
+## MacOS (x86 only currently)
 
 Unfortunately MacOS building hasn't been tested, it should be technically possible,
 but the steps to do so won't be discussed here.

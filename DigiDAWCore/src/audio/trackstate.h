@@ -109,24 +109,24 @@ namespace DigiDAW::Audio
 		Track defaultTrack;
 		Bus defaultBus;
 
-		void updateTracks();
-		void updateBuses();
+		void UpdateTracks();
+		void UpdateBuses();
 	public:
 		TrackState();
 
-		TrackIdentifier addTrack(Track track);
-		BusIdentifier addBus(Bus bus);
+		TrackIdentifier AddTrack(Track track);
+		BusIdentifier AddBus(Bus bus);
 
-		void removeTrack(TrackIdentifier track);
-		void removeBus(BusIdentifier bus);
+		void RemoveTrack(TrackIdentifier track);
+		void RemoveBus(BusIdentifier bus);
 
-		Track& getTrack(TrackIdentifier track);
-		Bus& getBus(BusIdentifier bus);
+		Track& GetTrack(TrackIdentifier track);
+		Bus& GetBus(BusIdentifier bus);
 
-		const std::vector<TrackIdentifier>& getAllTracks();
-		const std::vector<BusIdentifier>& getAllBuses();
+		const std::vector<TrackIdentifier>& GetAllTracks();
+		const std::vector<BusIdentifier>& GetAllBuses();
 
-		void registerUpdateTracksHandler(std::function<void()> handler);
-		void registerUpdateBusesHandler(std::function<void()> handler);
+		void RegisterUpdateTracksHandler(std::function<void()> handler);
+		void RegisterUpdateBusesHandler(std::function<void()> handler);
 	};
 }

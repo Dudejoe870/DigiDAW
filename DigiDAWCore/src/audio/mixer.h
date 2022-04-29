@@ -35,26 +35,26 @@ namespace DigiDAW::Audio
 		std::unordered_map<TrackState::TrackIdentifier, MixBuffer> trackBuffers;
 		std::unordered_map<TrackState::BusIdentifier, MixBuffer> busBuffers;
 
-		void applyGain(float gain, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);
-		void applyStereoPanning(float pan, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);
-		void processTrack(std::vector<float>& trackInputBuffer, TrackState::TrackIdentifier track, unsigned int nFrames, unsigned int sampleRate);
-		void processBus(TrackState::BusIdentifier bus, unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate);
+		void ApplyGain(float gain, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);
+		void ApplyStereoPanning(float pan, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);
+		void ProcessTrack(std::vector<float>& trackInputBuffer, TrackState::TrackIdentifier track, unsigned int nFrames, unsigned int sampleRate);
+		void ProcessBus(TrackState::BusIdentifier bus, unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate);
 	public:
 		Mixer(Engine& audioEngine);
 
-		void updateTrackBuffers();
-		void updateBusBuffers();
+		void UpdateTrackBuffers();
+		void UpdateBusBuffers();
 
-		void mix(
+		void Mix(
 			float* outputBuffer,
 			float* inputBuffer, 
 			double time, 
 			unsigned int nFrames, 
 			unsigned int nOutChannels, unsigned int nInChannels, unsigned int sampleRate);
 
-		void updateCurrentTime(double time);
+		void UpdateCurrentTime(double time);
 
-		void startTestTone();
-		void endTestTone();
+		void StartTestTone();
+		void EndTestTone();
 	};
 }

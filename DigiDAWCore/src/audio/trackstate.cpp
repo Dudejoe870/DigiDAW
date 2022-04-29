@@ -12,7 +12,7 @@ namespace DigiDAW::Audio
 		this->currentBusIndex = 0;
 	}
 
-	void TrackState::updateTracks()
+	void TrackState::UpdateTracks()
 	{
 		std::vector<TrackIdentifier> identifiers;
 		for (auto& kv : tracks) identifiers.push_back(kv.first);
@@ -22,7 +22,7 @@ namespace DigiDAW::Audio
 		for (auto& func : updateTracksCallbacks) func();
 	}
 
-	void TrackState::updateBuses()
+	void TrackState::UpdateBuses()
 	{
 		std::vector<BusIdentifier> identifiers;
 		for (auto& kv : buses) identifiers.push_back(kv.first);
@@ -34,62 +34,62 @@ namespace DigiDAW::Audio
 
 	// Technically through repeated adding and removing tracks, this could overflow.
 	// But you'd have to do that so many times (considering the fact the identifier is 64-bit) that it is pretty much irrelevant.
-	TrackState::TrackIdentifier TrackState::addTrack(Track track)
+	TrackState::TrackIdentifier TrackState::AddTrack(Track track)
 	{
 		tracks[currentTrackIndex] = track;
-		updateTracks();
+		UpdateTracks();
 		return currentTrackIndex++;
 	}
 
-	TrackState::BusIdentifier TrackState::addBus(Bus bus)
+	TrackState::BusIdentifier TrackState::AddBus(Bus bus)
 	{
 		buses[currentBusIndex] = bus;
-		updateBuses();
+		UpdateBuses();
 		return currentBusIndex++;
 	}
 
-	void TrackState::removeTrack(TrackIdentifier track)
+	void TrackState::RemoveTrack(TrackIdentifier track)
 	{
 		tracks.erase(track);
-		updateTracks();
+		UpdateTracks();
 	}
 
-	void TrackState::removeBus(BusIdentifier bus)
+	void TrackState::RemoveBus(BusIdentifier bus)
 	{
 		buses.erase(bus);
-		updateBuses();
+		UpdateBuses();
 	}
 
-	TrackState::Track& TrackState::getTrack(TrackIdentifier track)
+	TrackState::Track& TrackState::GetTrack(TrackIdentifier track)
 	{
 		if (track == -1 || !tracks.contains(track))
 			return defaultTrack;
 		return tracks[track];
 	}
 
-	TrackState::Bus& TrackState::getBus(BusIdentifier bus)
+	TrackState::Bus& TrackState::GetBus(BusIdentifier bus)
 	{
 		if (bus == -1 || !buses.contains(bus))
 			return defaultBus;
 		return buses[bus];
 	}
 
-	const std::vector<TrackState::TrackIdentifier>& TrackState::getAllTracks()
+	const std::vector<TrackState::TrackIdentifier>& TrackState::GetAllTracks()
 	{
 		return currentTracks;
 	}
 
-	const std::vector<TrackState::BusIdentifier>& TrackState::getAllBuses()
+	const std::vector<TrackState::BusIdentifier>& TrackState::GetAllBuses()
 	{
 		return currentBuses;
 	}
 
-	void TrackState::registerUpdateTracksHandler(std::function<void()> handler)
+	void TrackState::RegisterUpdateTracksHandler(std::function<void()> handler)
 	{
 		updateTracksCallbacks.push_back(handler);
 	}
 
-	void TrackState::registerUpdateBusesHandler(std::function<void()> handler)
+	void TrackState::RegisterUpdateBusesHandler(std::function<void()> handler)
 	{
 		updateBusesCallbacks.push_back(handler);
 	}

@@ -17,7 +17,12 @@ endif()
 set(RTAUDIO_BUILD_TESTING OFF)
 set(RTAUDIO_BUILD_SHARED_LIBS OFF)
 set(RTAUDIO_BUILD_STATIC_LIBS ON)
-add_subdirectory ("rtaudio" EXCLUDE_FROM_ALL)
+add_subdirectory ("rtaudio")
+
+set(GLFW_INSTALL OFF)
+set(GLFW_BUILD_DOCS OFF)
+set(GLFW_LIBRARY_TYPE "STATIC")
+add_subdirectory ("glfw")
 
 add_subdirectory ("DigiDAWCore")
 add_subdirectory ("DigiDAWUI")

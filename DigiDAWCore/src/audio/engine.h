@@ -50,6 +50,7 @@ namespace DigiDAW::Audio
 		unsigned int currentSampleRate;
 		unsigned int currentBufferSize;
 
+		void UpdateCurrentSupportedSampleRates();
 		void ResetSampleRate();
 		AudioDevice GetAudioDevice(unsigned int index);
 		void UpdateDevices();

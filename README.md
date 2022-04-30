@@ -42,6 +42,7 @@ The common dependencies between all platforms are
 - [GLFW](https://www.glfw.org) (Included already as a git submodule)
 - [fmt](https://github.com/fmtlib/fmt) (Included already as a git submodule)
 - [ImGUI](https://github.com/ocornut/imgui) (Included already in the source) 
+- [mIni](https://github.com/pulzed/mINI) (Included already in the source)
 - [rtaudio](https://github.com/thestk/rtaudio) (Included already as a git submodule)
 
 ### Linux

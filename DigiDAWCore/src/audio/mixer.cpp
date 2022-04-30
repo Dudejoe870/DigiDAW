@@ -2,12 +2,6 @@
 
 #include "audio/engine.h"
 
-#ifdef __AVX__
-#include <immintrin.h>
-#else
-#error AVX isn't available... cannot compile.
-#endif
-
 namespace DigiDAW::Audio
 {
 	Mixer::Mixer(Engine& audioEngine) 
@@ -197,6 +191,7 @@ namespace DigiDAW::Audio
 				{
 					for (unsigned int outChannel : busInfo.inputChannelToDeviceOutputChannels[channel])
 					{
+						// TODO: Vectorize this
 						if (outChannel >= nOutChannels) continue;
 						for (unsigned int frame = 0; frame < nFrames; ++frame)
 							outputBuffer[(outChannel * nFrames) + frame] += busBuffers[bus].buffer[(channel * nFrames) + frame];
@@ -213,8 +208,8 @@ namespace DigiDAW::Audio
 				monoOutput.push_back((float)((0.10 * (std::clamp(1.0 - sampleTime, 0.0, 1.0))) * std::sin(2 * pi * 440.0 * sampleTime)));
 			}
 
-			std::memcpy(&outputBuffer[0 * nFrames], monoOutput.data(), sizeof(float) * monoOutput.size());
-			if (nOutChannels > 1) std::memcpy(&outputBuffer[1 * nFrames], monoOutput.data(), sizeof(float) * monoOutput.size());
+			for (unsigned int channel = 0; channel < nOutChannels; ++channel)
+				std::memcpy(&outputBuffer[channel * nFrames], monoOutput.data(), sizeof(float) * monoOutput.size());
 		}
 	}
 

@@ -33,7 +33,7 @@ namespace DigiDAW::Audio
 
 		currentBufferSize = 512;
 
-		GetSupportedSampleRates(currentSupportedSampleRates);
+		UpdateCurrentSupportedSampleRates();
 		ResetSampleRate(); // Also opens stream
 	}
 
@@ -94,6 +94,11 @@ namespace DigiDAW::Audio
 		return RtAudio::getApiName(api);
 	}
 
+	void Engine::UpdateCurrentSupportedSampleRates()
+	{
+		GetSupportedSampleRates(currentSupportedSampleRates);
+	}
+
 	void Engine::ResetSampleRate()
 	{
 		if (currentOutputDevice == -1 && currentInputDevice != -1)
@@ -147,15 +152,9 @@ namespace DigiDAW::Audio
 			return;
 		}
 
-		// As an optimization, use the smaller of the two sample rate lists for the outer loop to minimize iterations.
-		std::vector<unsigned int>& rates1 =
-			outputInfo.sampleRates.size() < inputInfo.sampleRates.size() ? outputInfo.sampleRates : inputInfo.sampleRates;
-		std::vector<unsigned int>& rates2 =
-			rates1 == outputInfo.sampleRates ? inputInfo.sampleRates : outputInfo.sampleRates;
-
-		for (unsigned int rate1 : rates1)
+		for (unsigned int rate1 : outputInfo.sampleRates)
 		{
-			for (unsigned int rate2 : rates2)
+			for (unsigned int rate2 : inputInfo.sampleRates)
 			{
 				if (rate1 == rate2)
 				{
@@ -176,7 +175,7 @@ namespace DigiDAW::Audio
 		currentOutputDevice = device;
 
 		ResetSampleRate();
-		GetSupportedSampleRates(currentSupportedSampleRates);
+		UpdateCurrentSupportedSampleRates();
 
 		OpenStream();
 		return ReturnCode::Success;
@@ -190,7 +189,7 @@ namespace DigiDAW::Audio
 		currentInputDevice = device;
 
 		ResetSampleRate();
-		GetSupportedSampleRates(currentSupportedSampleRates);
+		UpdateCurrentSupportedSampleRates();
 
 		OpenStream();
 		return ReturnCode::Success;

@@ -364,3 +364,6 @@ FodyWeavers.xsd
 
 # UI resources file that gets automatically generated when building.
 resources.cpp
+
+# Custom Resources files
+res/

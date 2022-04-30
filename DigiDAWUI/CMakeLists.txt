@@ -11,13 +11,12 @@ function(create_resources dir src_output header_output)
     # Create empty output files
     file(WRITE ${src_output} 
 "/** This is an Auto Generated File by DigiDAWUI/CMakeLists.txt **/
-
 ")
     file(WRITE ${header_output} 
 "/** This is an Auto Generated File by DigiDAWUI/CMakeLists.txt **/
 #pragma once
 
-namespace DigiDAWUI::Resources
+namespace DigiDAW::UI::Resources
 {")
 
     # Collect input files
@@ -34,7 +33,11 @@ namespace DigiDAWUI::Resources
         # Convert hex data for C compatibility
         string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1," filedata ${filedata})
         # Append data to output file
-        file(APPEND ${src_output} "    const unsigned char ${filename}[] = {${filedata}};\n    const unsigned ${filename}_size = sizeof(${filename});\n")
+        file(APPEND ${src_output} "
+// ${dir}/${filename_non_c}
+const unsigned char ${filename}[] = {${filedata}};
+const unsigned ${filename}_size = sizeof(${filename});
+")
         file(APPEND ${header_output} "
     // ${dir}/${filename_non_c}
     extern \"C\" const unsigned char ${filename}[];
@@ -42,12 +45,12 @@ namespace DigiDAWUI::Resources
 ")
     endforeach()
 
-    file(APPEND ${header_output} "} // namespace DigiDAWUI::Resources\n")
+    file(APPEND ${header_output} "} // namespace DigiDAW::UI::Resources\n")
 endfunction()
 
 create_resources("res" ${RESOURCE_FILE_SOURCE} ${RESOURCE_FILE_HEADER})
 
-add_executable(DigiDAWUI "src/main.cpp" "src/glad/glad.c" "src/imgui/imgui_impl_glfw.cpp" "src/imgui/imgui.cpp" "src/imgui/imgui_demo.cpp" "src/imgui/imgui_draw.cpp" "src/imgui/imgui_tables.cpp" "src/imgui/imgui_widgets.cpp" "src/imgui/imgui_impl_opengl3.cpp" "src/ui.cpp" "include/ui.h"  ${RESOURCE_FILE_SOURCE})
+add_executable(DigiDAWUI "src/main.cpp" "src/glad/glad.c" "src/imgui/imgui_impl_glfw.cpp" "src/imgui/imgui.cpp" "src/imgui/imgui_demo.cpp" "src/imgui/imgui_draw.cpp" "src/imgui/imgui_tables.cpp" "src/imgui/imgui_widgets.cpp" "src/imgui/imgui_impl_opengl3.cpp" "src/ui.cpp" "include/ui.h"  ${RESOURCE_FILE_SOURCE} "include/gui_util.h" "src/gui_util.cpp")
 target_include_directories(DigiDAWUI PRIVATE "src" "include")
 
 set_property(TARGET DigiDAWUI PROPERTY OUTPUT_NAME "DigiDAW")

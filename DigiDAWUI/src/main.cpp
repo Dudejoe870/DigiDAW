@@ -14,9 +14,10 @@
 #include <GLFW/glfw3.h>
 
 #include "ui.h"
+#include "timer.h"
 #include "res/resources.h"
 
-using namespace DigiDAW::UI;
+using namespace DigiDAW;
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -25,13 +26,13 @@ static void glfw_error_callback(int error, const char* description)
 
 int main()
 {
-	auto audioEngine = std::make_shared<DigiDAW::Audio::Engine>(RtAudio::Api::UNSPECIFIED);
+	auto audioEngine = std::make_shared<Audio::Engine>(RtAudio::Api::UNSPECIFIED);
 
-	DigiDAW::Audio::TrackState::BusIdentifier mainBus = audioEngine->trackState.AddBus(
-		DigiDAW::Audio::TrackState::Bus(
-			DigiDAW::Audio::TrackState::ChannelNumber::Stereo,
+	Audio::TrackState::BusIdentifier mainBus = audioEngine->trackState.AddBus(
+		Audio::TrackState::Bus(
+			Audio::TrackState::ChannelNumber::Stereo,
 			0.0f, 0.0f,
-			std::vector<DigiDAW::Audio::TrackState::BusOutput> {  },
+			std::vector<Audio::TrackState::BusOutput> {  },
 			std::vector<std::vector<unsigned int>>
 			{
 				std::vector<unsigned int> { 0 },
@@ -39,12 +40,12 @@ int main()
 			})); // Make a Bus that outputs to the first two channels of the output device.
 
 	audioEngine->trackState.AddTrack(
-		DigiDAW::Audio::TrackState::Track(
-			DigiDAW::Audio::TrackState::ChannelNumber::Mono,
+		Audio::TrackState::Track(
+			Audio::TrackState::ChannelNumber::Mono,
 			-25.0f, 0.0f,
-			std::vector<DigiDAW::Audio::TrackState::BusOutput>
+			std::vector<Audio::TrackState::BusOutput>
 			{
-				DigiDAW::Audio::TrackState::BusOutput(mainBus, std::vector<std::vector<unsigned int>>
+				Audio::TrackState::BusOutput(mainBus, std::vector<std::vector<unsigned int>>
 				{
 					std::vector<unsigned int> { 0, 1 }
 				})
@@ -100,10 +101,10 @@ int main()
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    UI ui(audioEngine);
+    UI::UI ui(audioEngine);
 
     // Main loop
-    while (!glfwWindowShouldClose(window))
+    while (!glfwWindowShouldClose(window) && !ui.ShouldExit())
     {
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -116,6 +117,8 @@ int main()
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+
+        UI::Timer::UpdatePendingTimers();
 
         // Render the UI.
         ui.Render();
@@ -132,8 +135,6 @@ int main()
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         // Update and Render additional Platform Windows
-        // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
-        //  For this specific demo app we could also call glfwMakeContextCurrent(window) directly)
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
             GLFWwindow* backup_current_context = glfwGetCurrentContext();

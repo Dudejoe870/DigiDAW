@@ -57,7 +57,7 @@ namespace DigiDAW::Audio
 		return -1;
 	}
 
-	std::vector<RtAudio::Api> Engine::GetSupportedAPIs()
+	std::vector<RtAudio::Api>& Engine::GetSupportedAPIs()
 	{
 		return supportedAPIs;
 	}
@@ -79,7 +79,7 @@ namespace DigiDAW::Audio
 		return Engine::AudioDevice(audioBackend->getDeviceInfo(index), audioBackend->getCurrentApi(), index);
 	}
 
-	std::vector<Engine::AudioDevice> Engine::GetDevices()
+	std::vector<Engine::AudioDevice>& Engine::GetDevices()
 	{
 		return currentDevices;
 	}
@@ -96,7 +96,7 @@ namespace DigiDAW::Audio
 
 	void Engine::UpdateCurrentSupportedSampleRates()
 	{
-		GetSupportedSampleRates(currentSupportedSampleRates);
+		GetSupportedSampleRates(currentSupportedSampleRates, currentOutputDevice, currentInputDevice);
 	}
 
 	void Engine::ResetSampleRate()
@@ -169,7 +169,10 @@ namespace DigiDAW::Audio
 
 	ReturnCode Engine::SetCurrentOutputDevice(unsigned int device)
 	{
-		if (device != -1 && !currentDevices[device].info.probed)
+		if (currentOutputDevice == device)
+			return ReturnCode::Success;
+
+		if (device != -1 && (!currentDevices[device].info.probed || currentDevices[device].info.outputChannels == 0))
 			return ReturnCode::Error;
 
 		currentOutputDevice = device;
@@ -183,7 +186,10 @@ namespace DigiDAW::Audio
 
 	ReturnCode Engine::SetCurrentInputDevice(unsigned int device)
 	{
-		if (device != -1 && !currentDevices[device].info.probed)
+		if (currentInputDevice == device)
+			return ReturnCode::Success;
+
+		if (device != -1 && (!currentDevices[device].info.probed || currentDevices[device].info.inputChannels == 0))
 			return ReturnCode::Error;
 
 		currentInputDevice = device;
@@ -231,9 +237,15 @@ namespace DigiDAW::Audio
 		return currentBufferSize;
 	}
 
+	std::vector<unsigned int>& Engine::GetSupportedSampleRates()
+	{
+		return currentSupportedSampleRates;
+	}
+
 	ReturnCode Engine::GetSupportedSampleRates(std::vector<unsigned int>& sampleRates)
 	{
-		return GetSupportedSampleRates(sampleRates, currentOutputDevice, currentInputDevice);
+		sampleRates = currentSupportedSampleRates;
+		return ReturnCode::Success;
 	}
 
 	ReturnCode Engine::GetSupportedSampleRates(std::vector<unsigned int>& sampleRates, unsigned int outputDevice, unsigned int inputDevice)
@@ -294,11 +306,6 @@ namespace DigiDAW::Audio
 			std::back_inserter(sampleRates));
 
 		return ReturnCode::Success;
-	}
-
-	std::vector<unsigned int> Engine::GetCurrentSupportedSampleRates()
-	{
-		return currentSupportedSampleRates;
 	}
 
 	ReturnCode Engine::ChangeBackend(RtAudio::Api api)

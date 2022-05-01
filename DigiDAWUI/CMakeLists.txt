@@ -50,7 +50,7 @@ endfunction()
 
 create_resources("res" ${RESOURCE_FILE_SOURCE} ${RESOURCE_FILE_HEADER})
 
-add_executable(DigiDAWUI "src/main.cpp" "src/glad/glad.c" "src/imgui/imgui_impl_glfw.cpp" "src/imgui/imgui.cpp" "src/imgui/imgui_demo.cpp" "src/imgui/imgui_draw.cpp" "src/imgui/imgui_tables.cpp" "src/imgui/imgui_widgets.cpp" "src/imgui/imgui_impl_opengl3.cpp" "src/ui.cpp" "include/ui.h"  ${RESOURCE_FILE_SOURCE} "include/gui_util.h" "src/gui_util.cpp")
+add_executable(DigiDAWUI "src/main.cpp" "src/glad/glad.c" "src/imgui/imgui_impl_glfw.cpp" "src/imgui/imgui.cpp" "src/imgui/imgui_demo.cpp" "src/imgui/imgui_draw.cpp" "src/imgui/imgui_tables.cpp" "src/imgui/imgui_widgets.cpp" "src/imgui/imgui_impl_opengl3.cpp" "src/ui.cpp" "include/ui.h"  ${RESOURCE_FILE_SOURCE} "include/gui_util.h" "src/gui_util.cpp" "include/timer.h" "src/timer.cpp")
 target_include_directories(DigiDAWUI PRIVATE "src" "include")
 
 set_property(TARGET DigiDAWUI PROPERTY OUTPUT_NAME "DigiDAW")

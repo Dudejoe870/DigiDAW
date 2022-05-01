@@ -14,6 +14,11 @@ namespace DigiDAW::UI
 	class UI
 	{
 	private:
+		enum class TimerID : unsigned long long
+		{
+			TestToneTimer = 0
+		};
+
 		struct Style
 		{
 			std::string name;
@@ -30,9 +35,9 @@ namespace DigiDAW::UI
 		bool showDemoWindow = true;
 		bool showSettingsWindow = false;
 
-		ImVec4 clearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+		ImVec4 clearColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
-		std::shared_ptr<DigiDAW::Audio::Engine> audioEngine;
+		std::shared_ptr<Audio::Engine> audioEngine;
 		
 		ImFont* fontHeader1 = nullptr;
 
@@ -44,12 +49,21 @@ namespace DigiDAW::UI
 		mINI::INIFile settingsFile;
 		mINI::INIStructure settingsStructure;
 
+		void SetupStateFromSettings();
+
+		unsigned int GetDeviceByName(std::string name);
+
+		void ModifyStyle(ImGuiStyle& style);
 		void SaveSettings();
 		void RenderSettingsWindow();
+
+		bool shouldExit = false;
 	public:
-		UI(std::shared_ptr<DigiDAW::Audio::Engine>& audioEngine);
+		UI(std::shared_ptr<Audio::Engine>& audioEngine);
 
 		void Render();
 		ImVec4 GetClearColor();
+
+		bool ShouldExit();
 	};
 }

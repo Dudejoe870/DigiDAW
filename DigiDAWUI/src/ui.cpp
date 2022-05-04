@@ -7,6 +7,8 @@
 
 #include "res/resources.h"
 
+#include "imgui-knobs.h"
+
 namespace DigiDAW::UI
 {
     UI::UI(std::shared_ptr<Core::Audio::Engine>& audioEngine)

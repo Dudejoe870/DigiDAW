@@ -4,7 +4,7 @@
 
 #include "mini/ini.h"
 
-#include <audio/engine.h>
+#include <digidaw/core/audio/engine.h>
 
 #include <memory>
 #include <string>
@@ -37,7 +37,7 @@ namespace DigiDAW::UI
 
 		ImVec4 clearColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
-		std::shared_ptr<Audio::Engine> audioEngine;
+		std::shared_ptr<Core::Audio::Engine> audioEngine;
 		
 		ImFont* fontHeader1 = nullptr;
 
@@ -59,7 +59,7 @@ namespace DigiDAW::UI
 
 		bool shouldExit = false;
 	public:
-		UI(std::shared_ptr<Audio::Engine>& audioEngine);
+		UI(std::shared_ptr<Core::Audio::Engine>& audioEngine);
 
 		void Render();
 		ImVec4 GetClearColor();

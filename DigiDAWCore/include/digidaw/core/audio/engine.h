@@ -1,11 +1,11 @@
 #pragma once
 
-#include "audio/common.h"
+#include "digidaw/core/audio/common.h"
 
-#include "audio/trackstate.h"
-#include "audio/mixer.h"
+#include "digidaw/core/audio/trackstate.h"
+#include "digidaw/core/audio/mixer.h"
 
-namespace DigiDAW::Audio
+namespace DigiDAW::Core::Audio
 {
 	class Engine
 	{
@@ -74,12 +74,12 @@ namespace DigiDAW::Audio
 		Engine(RtAudio::Api api);
 		~Engine();
 
-		std::vector<RtAudio::Api>& GetSupportedAPIs();
+		const std::vector<RtAudio::Api>& GetSupportedAPIs();
 		RtAudio::Api GetCurrentAPI();
 
 		ReturnCode ChangeBackend(RtAudio::Api api);
 
-		std::vector<AudioDevice>& GetDevices();
+		const std::vector<AudioDevice>& GetDevices();
 
 		std::string GetAPIDisplayName(RtAudio::Api api);
 		std::string GetAPIName(RtAudio::Api api);
@@ -96,7 +96,7 @@ namespace DigiDAW::Audio
 		ReturnCode SetCurrentBufferSize(unsigned int bufferSize);
 		unsigned int GetCurrentBufferSize();
 
-		std::vector<unsigned int>& GetSupportedSampleRates();
+		const std::vector<unsigned int>& GetSupportedSampleRates();
 		ReturnCode GetSupportedSampleRates(std::vector<unsigned int>& sampleRates);
 		ReturnCode GetSupportedSampleRates(std::vector<unsigned int>& sampleRates, unsigned int outputDevice, unsigned int inputDevice);
 		ReturnCode GetSupportedSampleRates(std::vector<unsigned int>& sampleRates, AudioDevice outputDevice, AudioDevice inputDevice);

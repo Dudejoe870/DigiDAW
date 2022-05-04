@@ -1,96 +1,42 @@
-#include "audio/trackstate.h"
+#include "digidaw/core/audio/trackstate.h"
 
-#pragma once
-
-#include "audio/common.h"
-
-namespace DigiDAW::Audio
+namespace DigiDAW::Core::Audio
 {
-	TrackState::TrackState()
-	{
-		this->currentTrackIndex = 0;
-		this->currentBusIndex = 0;
-	}
-
-	void TrackState::UpdateTracks()
-	{
-		std::vector<TrackIdentifier> identifiers;
-		for (auto& kv : tracks) identifiers.push_back(kv.first);
-
-		currentTracks = identifiers;
-
-		for (auto& func : updateTracksCallbacks) func();
-	}
-
-	void TrackState::UpdateBuses()
-	{
-		std::vector<BusIdentifier> identifiers;
-		for (auto& kv : buses) identifiers.push_back(kv.first);
-
-		currentBuses = identifiers;
-
-		for (auto& func : updateBusesCallbacks) func();
-	}
-
 	// Technically through repeated adding and removing tracks, this could overflow.
-	// But you'd have to do that so many times (considering the fact the identifier is 64-bit) that it is pretty much irrelevant.
-	TrackState::TrackIdentifier TrackState::AddTrack(Track track)
+	// But you'd have to do that so many times (considering the fact the identifier is 32-bit) that it is pretty much irrelevant.
+	TrackState::Track& TrackState::AddTrack(Track track)
 	{
-		tracks[currentTrackIndex] = track;
-		UpdateTracks();
-		return currentTrackIndex++;
+		currentTracks.push_back(track);
+		for (auto& func : addTrackCallbacks) func(currentTracks.back());
+		return currentTracks.back();
 	}
 
-	TrackState::BusIdentifier TrackState::AddBus(Bus bus)
+	TrackState::Bus& TrackState::AddBus(Bus bus)
 	{
-		buses[currentBusIndex] = bus;
-		UpdateBuses();
-		return currentBusIndex++;
+		currentBuses.push_back(bus);
+		for (auto& func : addBusCallbacks) func(currentBuses.back());
+		return currentBuses.back();
 	}
 
-	void TrackState::RemoveTrack(TrackIdentifier track)
+	void TrackState::RemoveTrack(Track& track)
 	{
-		tracks.erase(track);
-		UpdateTracks();
+		currentTracks.erase(std::find(currentTracks.begin(), currentTracks.end(), track));
+		for (auto& func : removeTrackCallbacks) func(track);
 	}
 
-	void TrackState::RemoveBus(BusIdentifier bus)
+	void TrackState::RemoveBus(Bus& bus)
 	{
-		buses.erase(bus);
-		UpdateBuses();
+		currentBuses.erase(std::find(currentBuses.begin(), currentBuses.end(), bus));
+		for (auto& func : removeBusCallbacks) func(bus);
 	}
 
-	TrackState::Track& TrackState::GetTrack(TrackIdentifier track)
-	{
-		if (track == -1 || !tracks.contains(track))
-			return defaultTrack;
-		return tracks[track];
-	}
-
-	TrackState::Bus& TrackState::GetBus(BusIdentifier bus)
-	{
-		if (bus == -1 || !buses.contains(bus))
-			return defaultBus;
-		return buses[bus];
-	}
-
-	const std::vector<TrackState::TrackIdentifier>& TrackState::GetAllTracks()
+	const std::vector<TrackState::Track>& TrackState::GetAllTracks()
 	{
 		return currentTracks;
 	}
 
-	const std::vector<TrackState::BusIdentifier>& TrackState::GetAllBuses()
+	const std::vector<TrackState::Bus>& TrackState::GetAllBuses()
 	{
 		return currentBuses;
-	}
-
-	void TrackState::RegisterUpdateTracksHandler(std::function<void()> handler)
-	{
-		updateTracksCallbacks.push_back(handler);
-	}
-
-	void TrackState::RegisterUpdateBusesHandler(std::function<void()> handler)
-	{
-		updateBusesCallbacks.push_back(handler);
 	}
 }

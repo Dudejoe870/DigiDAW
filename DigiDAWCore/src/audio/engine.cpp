@@ -1,6 +1,6 @@
-#include "audio/engine.h"
+#include "digidaw/core/audio/engine.h"
 
-namespace DigiDAW::Audio
+namespace DigiDAW::Core::Audio
 {
 	Engine::Engine(RtAudio::Api api)
 		: mixer(*this)
@@ -57,7 +57,7 @@ namespace DigiDAW::Audio
 		return -1;
 	}
 
-	std::vector<RtAudio::Api>& Engine::GetSupportedAPIs()
+	const std::vector<RtAudio::Api>& Engine::GetSupportedAPIs()
 	{
 		return supportedAPIs;
 	}
@@ -79,7 +79,7 @@ namespace DigiDAW::Audio
 		return Engine::AudioDevice(audioBackend->getDeviceInfo(index), audioBackend->getCurrentApi(), index);
 	}
 
-	std::vector<Engine::AudioDevice>& Engine::GetDevices()
+	const std::vector<Engine::AudioDevice>& Engine::GetDevices()
 	{
 		return currentDevices;
 	}
@@ -237,7 +237,7 @@ namespace DigiDAW::Audio
 		return currentBufferSize;
 	}
 
-	std::vector<unsigned int>& Engine::GetSupportedSampleRates()
+	const std::vector<unsigned int>& Engine::GetSupportedSampleRates()
 	{
 		return currentSupportedSampleRates;
 	}
@@ -310,12 +310,20 @@ namespace DigiDAW::Audio
 
 	ReturnCode Engine::ChangeBackend(RtAudio::Api api)
 	{
+		bool previousStreamOpen = IsStreamOpen();
+		bool previousStreamRunning = IsStreamRunning();
+
 		audioBackend->closeStream();
 		delete audioBackend.release();
 
 		audioBackend = std::make_unique<RtAudio>(api);
 
 		InitializeDevices();
+
+		if (previousStreamOpen)
+			OpenStream();
+		if (previousStreamRunning)
+			StartEngine();
 
 		return ReturnCode::Success;
 	}
@@ -349,6 +357,7 @@ namespace DigiDAW::Audio
 		if (currentOutputDevice == -1)
 			return ReturnCode::Error;
 
+		bool previousStreamRunning = IsStreamRunning();
 		if (IsStreamOpen()) audioBackend->closeStream();
 
 		RtAudio::StreamParameters outputParams;
@@ -384,9 +393,11 @@ namespace DigiDAW::Audio
 			return ReturnCode::Error;
 
 		currentBufferSize = bufferSize;
-		mixer.UpdateTrackBuffers();
-		mixer.UpdateBusBuffers();
+		mixer.UpdateAllTrackBuffers();
+		mixer.UpdateAllBusBuffers();
 
+		if (previousStreamRunning)
+			return StartEngine();
 		return ReturnCode::Success;
 	}
 

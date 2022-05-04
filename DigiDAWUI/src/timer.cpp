@@ -1,6 +1,8 @@
-#include "timer.h"
+#include "digidaw/ui/timer.h"
 
 #include "imgui.h"
+
+#include <iostream>
 
 #include <algorithm>
 
@@ -17,7 +19,7 @@ namespace DigiDAW::UI
 	{
 		ImGuiIO& io = ImGui::GetIO();
 		std::vector<unsigned long long> elapsedTimers;
-		for (std::pair<unsigned long long, PendingTimer> pair : pendingTimers)
+		for (auto& pair : pendingTimers)
 		{
 			pair.second.elapsed += io.DeltaTime;
 			if (pair.second.elapsed >= pair.second.seconds)

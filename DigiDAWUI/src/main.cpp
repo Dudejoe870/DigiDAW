@@ -1,7 +1,7 @@
 #include <iostream>
 #include <memory>
 
-#include <audio/engine.h>
+#include <digidaw/core/audio/engine.h>
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -13,8 +13,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "ui.h"
-#include "timer.h"
+#include "digidaw/ui/ui.h"
+#include "digidaw/ui/timer.h"
 #include "res/resources.h"
 
 using namespace DigiDAW;
@@ -26,30 +26,42 @@ static void glfw_error_callback(int error, const char* description)
 
 int main()
 {
-	auto audioEngine = std::make_shared<Audio::Engine>(RtAudio::Api::UNSPECIFIED);
+	auto audioEngine = std::make_shared<Core::Audio::Engine>(RtAudio::Api::UNSPECIFIED);
 
-	Audio::TrackState::BusIdentifier mainBus = audioEngine->trackState.AddBus(
-		Audio::TrackState::Bus(
-			Audio::TrackState::ChannelNumber::Stereo,
+    Core::Audio::TrackState::Bus& mainBus = audioEngine->trackState.AddBus(
+        Core::Audio::TrackState::Bus("Main Bus",
+            Core::Audio::TrackState::ChannelNumber::Stereo,
 			0.0f, 0.0f,
-			std::vector<Audio::TrackState::BusOutput> {  },
 			std::vector<std::vector<unsigned int>>
 			{
 				std::vector<unsigned int> { 0 },
 				std::vector<unsigned int> { 1 }
 			})); // Make a Bus that outputs to the first two channels of the output device.
-
+    /*
 	audioEngine->trackState.AddTrack(
-		Audio::TrackState::Track(
-			Audio::TrackState::ChannelNumber::Mono,
+        Core::Audio::TrackState::Track("Track 1",
+            Core::Audio::TrackState::ChannelNumber::Stereo,
 			-25.0f, 0.0f,
-			std::vector<Audio::TrackState::BusOutput>
+			std::vector<Core::Audio::TrackState::BusOutput>
 			{
-				Audio::TrackState::BusOutput(mainBus, std::vector<std::vector<unsigned int>>
+				Core::Audio::TrackState::BusOutput(mainBus, std::vector<std::vector<unsigned int>>
 				{
-					std::vector<unsigned int> { 0, 1 }
+					std::vector<unsigned int> { 0 },
+                    std::vector<unsigned int> { 1 }
 				})
-			})); // Make a Mono Track that outputs both it's channels to the L and R channels of the mainBus.
+			})); // Make a Stereo Track that outputs both it's channels to the L and R channels of the mainBus.
+    */
+    audioEngine->trackState.AddTrack(
+        Core::Audio::TrackState::Track("Track 1",
+            Core::Audio::TrackState::ChannelNumber::Mono,
+            -25.0f, 0.0f,
+            std::vector<Core::Audio::TrackState::BusOutput>
+            {
+                Core::Audio::TrackState::BusOutput(mainBus, std::vector<std::vector<unsigned int>>
+                {
+                    std::vector<unsigned int> { 0, 1 }
+                })
+            })); // Make a Mono Track that outputs both it's channels to the L and R channels of the mainBus.
 
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);

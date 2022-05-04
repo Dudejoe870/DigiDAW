@@ -1,7 +1,7 @@
-#include "ui.h"
+#include "digidaw/ui/ui.h"
 
-#include "gui_util.h"
-#include "timer.h"
+#include "digidaw/ui/gui_util.h"
+#include "digidaw/ui/timer.h"
 
 #include <fmt/core.h>
 
@@ -9,7 +9,7 @@
 
 namespace DigiDAW::UI
 {
-    UI::UI(std::shared_ptr<Audio::Engine>& audioEngine)
+    UI::UI(std::shared_ptr<Core::Audio::Engine>& audioEngine)
         : currentGuiStyle(ImGui::GetStyle()), settingsFile("settings.ini")
     {
         this->audioEngine = audioEngine;
@@ -46,6 +46,9 @@ namespace DigiDAW::UI
 
         // Load state from settings.ini
         SetupStateFromSettings();
+
+        // Finally, start the audio engine.
+        audioEngine->StartEngine();
     }
 
     void UI::SetupStateFromSettings()
@@ -79,7 +82,7 @@ namespace DigiDAW::UI
         }
 
         // Make sure that the API selected is supported and is within the enum range. Otherwise use the default.
-        std::vector<RtAudio::Api>& supportedApis = audioEngine->GetSupportedAPIs();
+        const std::vector<RtAudio::Api>& supportedApis = audioEngine->GetSupportedAPIs();
         if (settingsApi < RtAudio::Api::NUM_APIS &&
             std::find(supportedApis.begin(), supportedApis.end(), settingsApi) != supportedApis.end())
         {
@@ -103,7 +106,7 @@ namespace DigiDAW::UI
         audioEngine->SetCurrentOutputDevice(settingsOutputDevice);
 
         // Set the sample rate by default to the fastest supported sample rate.
-        std::vector<unsigned int>& supportedSampleRates = audioEngine->GetSupportedSampleRates();
+        const std::vector<unsigned int>& supportedSampleRates = audioEngine->GetSupportedSampleRates();
         unsigned int settingsSampleRate = (supportedSampleRates.size() > 0) ? supportedSampleRates[supportedSampleRates.size()-1] : -1;
         // Try to load the sample rate from the ini file.
         try
@@ -132,8 +135,8 @@ namespace DigiDAW::UI
 
     unsigned int UI::GetDeviceByName(std::string name)
     {
-        std::vector<Audio::Engine::AudioDevice> devices = audioEngine->GetDevices();
-        for (Audio::Engine::AudioDevice& device : devices)
+        std::vector<Core::Audio::Engine::AudioDevice> devices = audioEngine->GetDevices();
+        for (Core::Audio::Engine::AudioDevice& device : devices)
         {
             if (device.info.name == name)
                 return device.index;
@@ -175,7 +178,7 @@ namespace DigiDAW::UI
         settingsStructure["Audio"]["api"] = fmt::format("{}", (int)audioEngine->GetCurrentAPI());
         settingsStructure["Audio"]["sampleRate"] = fmt::format("{}", audioEngine->GetCurrentSampleRate());
 
-        std::vector<Audio::Engine::AudioDevice>& devices = audioEngine->GetDevices();
+        const std::vector<Core::Audio::Engine::AudioDevice>& devices = audioEngine->GetDevices();
         unsigned int currentInputDevice = audioEngine->GetCurrentInputDevice();
         unsigned int currentOutputDevice = audioEngine->GetCurrentOutputDevice();
         settingsStructure["Audio"]["inputDevice"] = 
@@ -247,7 +250,7 @@ namespace DigiDAW::UI
                         ImGui::Separator();
 
                         // API Dropdown
-                        std::vector<RtAudio::Api>& supportedAPIs = audioEngine->GetSupportedAPIs();
+                        const std::vector<RtAudio::Api>& supportedAPIs = audioEngine->GetSupportedAPIs();
                         RtAudio::Api currentAPI = audioEngine->GetCurrentAPI();
                         if (ImGui::BeginCombo("Audio API", audioEngine->GetAPIDisplayName(currentAPI).c_str()))
                         {
@@ -266,7 +269,7 @@ namespace DigiDAW::UI
                         ImGui::Separator();
 
                         // Devices
-                        std::vector<DigiDAW::Audio::Engine::AudioDevice>& devices = audioEngine->GetDevices();
+                        const std::vector<Core::Audio::Engine::AudioDevice>& devices = audioEngine->GetDevices();
 
                         // Input Device Dropdown
                         unsigned int currentInput = audioEngine->GetCurrentInputDevice();
@@ -275,7 +278,7 @@ namespace DigiDAW::UI
                             if (ImGui::Selectable("None", currentInput == -1))
                                 audioEngine->SetCurrentInputDevice(-1);
 
-                            for (DigiDAW::Audio::Engine::AudioDevice device : devices)
+                            for (Core::Audio::Engine::AudioDevice device : devices)
                             {
                                 if (device.info.probed && device.info.inputChannels > 0)
                                 {
@@ -297,7 +300,7 @@ namespace DigiDAW::UI
                             if (ImGui::Selectable("None", currentOutput == -1))
                                 audioEngine->SetCurrentOutputDevice(-1);
 
-                            for (DigiDAW::Audio::Engine::AudioDevice device : devices)
+                            for (Core::Audio::Engine::AudioDevice device : devices)
                             {
                                 if (device.info.probed && device.info.outputChannels > 0)
                                 {
@@ -314,20 +317,18 @@ namespace DigiDAW::UI
                         ImGui::SameLine();
                         if (ImGui::Button("Test Tone"))
                         {
-                            audioEngine->StartEngine();
                             audioEngine->mixer.StartTestTone();
                             Timer::AddTimer((unsigned long long)TimerID::TestToneTimer, 1.0f, 
-                                [this]()
+                                [&]()
                                 {
                                     audioEngine->mixer.EndTestTone();
-                                    audioEngine->StopEngine();
                                 });
                         }
 
                         ImGui::Separator();
 
                         // Sample Rate Dropdown
-                        std::vector<unsigned int>& supportedSampleRates = audioEngine->GetSupportedSampleRates();
+                        const std::vector<unsigned int>& supportedSampleRates = audioEngine->GetSupportedSampleRates();
                         unsigned int currentSampleRate = audioEngine->GetCurrentSampleRate();
                         if (ImGui::BeginCombo("Sample Rate", fmt::format("{}hz", currentSampleRate).c_str()))
                         {

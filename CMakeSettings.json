@@ -15,6 +15,11 @@
           "name": "DIGIDAW_BUILD_UI",
           "value": "True",
           "type": "BOOL"
+        },
+        {
+          "name": "DIGIDAW_COMPILE_WITH_AVX",
+          "value": "True",
+          "type": "BOOL"
         }
       ]
     },

@@ -2,6 +2,8 @@
 
 #include "digidaw/core/audio/engine.h"
 
+#include "digidaw/core/detail/simdhelper.h"
+
 namespace DigiDAW::Core::Audio
 {
 	Mixer::Mixer(Engine& audioEngine) 
@@ -61,10 +63,9 @@ namespace DigiDAW::Core::Audio
 
 	void Mixer::ApplyGain(float gain, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames)
 	{
-		// TODO: Vectorize this
-		float amplitudeFactor = std::powf(10.0f, gain / 20.0f); // Perhaps use a lookup table for realtime mixing? (can calculate in realtime for extra accuracy when exporting)
-		for (unsigned int i = 0; i < nChannels * nFrames; ++i)
-			buffer[i] = amplitudeFactor * buffer[i];
+		// Perhaps use a lookup table for realtime mixing? (can calculate in realtime for extra accuracy when exporting)
+		float amplitudeFactor = std::powf(10.0f, gain / 20.0f);
+		Detail::SimdHelper::MulScalarBuffer(amplitudeFactor, buffer.data(), nChannels * nFrames); // buffer = amplitudeFactor * buffer
 	}
 
 	void Mixer::ApplyStereoPanning(float pan, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames)
@@ -77,12 +78,9 @@ namespace DigiDAW::Core::Audio
 		float rightAmplitude = std::sinf(panning * pidiv2);
 		float leftAmplitude = std::sinf((1.0f - panning) * pidiv2);
 
-		// TODO: Vectorize this
-		for (unsigned int frame = 0; frame < nFrames; ++frame)
-		{
-			buffer[frame] = leftAmplitude * buffer[frame]; // Left Channel
-			buffer[nFrames + frame] = rightAmplitude * buffer[nFrames + frame]; // Right Channel
-		}
+		// leftChannel = leftAmplitude * leftChannel
+		// rightChannel = rightAmplitude * rightChannel
+		Detail::SimdHelper::MulScalarBufferStereo(leftAmplitude, rightAmplitude, buffer.data(), nFrames, 0, nFrames);
 	}
 
 	void Mixer::ProcessTrack(std::vector<float>& trackInputBuffer, const TrackState::Track& track, unsigned int nFrames, unsigned int sampleRate)
@@ -97,8 +95,7 @@ namespace DigiDAW::Core::Audio
 		for (unsigned int channel = 0; channel < (unsigned int)track.nChannels; ++channel)
 		{
 			// TODO: Apply effects
-			for (unsigned int frame = 0; frame < nFrames; ++frame)
-				trackBuffer[(channel * nFrames) + frame] = trackInputBuffer[(channel * nFrames) + frame];
+			Detail::SimdHelper::CopyBuffer(trackInputBuffer.data(), trackBuffer.data(), channel * nFrames, channel * nFrames, nFrames);
 		}
 
 		// Apply gain
@@ -109,7 +106,6 @@ namespace DigiDAW::Core::Audio
 		if (track.nChannels == TrackState::ChannelNumber::Stereo)
 			ApplyStereoPanning(track.pan, trackBuffer, (unsigned int)track.nChannels, nFrames);
 
-		// TODO: Vectorize this
 		// Send out to buses by looping through all the bus outputs 
 		// each channel of this track has a mapping to the input channels of each bus it sends out to
 		for (unsigned int output = 0; output < track.outputs.size(); ++output)
@@ -123,8 +119,7 @@ namespace DigiDAW::Core::Audio
 				// (it's probably a good idea to pre-allocate this)
 				std::vector<float> channelOutputBuffer(nFrames * busOutput.inputChannelToOutputChannels[channel].size());
 				for (unsigned int outChannel = 0; outChannel < (unsigned int)busOutput.inputChannelToOutputChannels[channel].size(); ++outChannel)
-					for (unsigned int frame = 0; frame < nFrames; ++frame)
-						channelOutputBuffer[(outChannel * nFrames) + frame] = trackBuffer[(channel * nFrames) + frame];
+					Detail::SimdHelper::CopyBuffer(trackBuffer.data(), channelOutputBuffer.data(), channel * nFrames, outChannel * nFrames, nFrames);
 
 				// TODO: Support Surround Panning
 				// Apply panning (for panning mono tracks to stereo buses)
@@ -138,8 +133,13 @@ namespace DigiDAW::Core::Audio
 				{
 					// Finally, pass the track output to the bus buffer (as input)
 					std::vector<float>& busOutputBuffer = busBuffers[&busOutput.bus.get()].buffer;
-					for (unsigned int frame = 0; frame < nFrames; ++frame)
-						busOutputBuffer[(outChannel * nFrames) + frame] += channelOutputBuffer[(channelIndex * nFrames) + frame];
+
+					// busOutputBuffer[outChannel] += channelOutputBuffer[channelIndex]
+					Detail::SimdHelper::AddBuffer(
+						channelOutputBuffer.data(), 
+						busOutputBuffer.data(), 
+						channelIndex * nFrames, outChannel * nFrames, 
+						nFrames);
 
 					++channelIndex;
 				}
@@ -191,8 +191,8 @@ namespace DigiDAW::Core::Audio
 				std::vector<float> trackInput((size_t)track.nChannels * nFrames);
 				for (unsigned int channel = 0; channel < (unsigned int)track.nChannels; ++channel)
 					for (unsigned int frame = 0; frame < nFrames; ++frame)
-						//trackInput[(channel * nFrames) + frame] = ((float)rand() / RAND_MAX) + 1.0f;
-						trackInput[(channel * nFrames) + frame] = 0.0f;
+						trackInput[(channel * nFrames) + frame] = ((float)rand() / RAND_MAX) + 1.0f;
+						//trackInput[(channel * nFrames) + frame] = 0.0f;
 				ProcessTrack(trackInput, track, nFrames, sampleRate);
 			}
 
@@ -208,12 +208,16 @@ namespace DigiDAW::Core::Audio
 				{
 					for (unsigned int outChannel : bus.busChannelToDeviceOutputChannels[channel])
 					{
-						// TODO: Vectorize this
 						if (outChannel >= nOutChannels) continue;
 
 						// TODO: Mono Bus Panning
-						for (unsigned int frame = 0; frame < nFrames; ++frame)
-							outputBuffer[(outChannel * nFrames) + frame] += busBuffers[&bus].buffer[(channel * nFrames) + frame];
+
+						// outputBuffer[outChannel] += busBuffers[bus].buffer[channel]
+						Detail::SimdHelper::AddBuffer(
+							busBuffers[&bus].buffer.data(), 
+							outputBuffer, 
+							channel * nFrames, outChannel * nFrames, 
+							nFrames);
 					}
 				}
 			}

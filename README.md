@@ -7,8 +7,6 @@ DigiDAW is a Digital Audio Workstation focused on being easy to use, free, and c
 
 **[CURRENTLY VERY WORK IN PROGRESS, FEATURES COULD BE COMPLETELY NON-EXISTENT, BUGGY, OR BROKEN. PLEASE BE ADVISED]**
 
-> Note: This software only supports CPUs with AVX support. These are pretty much all CPUs released after 2011.
-
 ## Supported Audio Backends
 
 Thanks to [rtaudio](https://github.com/thestk/rtaudio), DigiDAW supports a variety of Audio Backends.
@@ -44,6 +42,7 @@ The common dependencies between all platforms are
 - [ImGUI](https://github.com/ocornut/imgui) (Included already in the source) 
 - [ImGUI Knobs](https://github.com/altschuler/imgui-knobs) (Included already in the source)
 - [mIni](https://github.com/pulzed/mINI) (Included already in the source)
+- [libsimdpp](https://github.com/p12tic/libsimdpp) (Included already in the source)
 - [rtaudio](https://github.com/thestk/rtaudio) (Included already as a git submodule)
 
 ### Linux

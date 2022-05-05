@@ -366,4 +366,5 @@ FodyWeavers.xsd
 resources.cpp
 
 # Custom Resources files
-res/
+resources.c
+resources.h

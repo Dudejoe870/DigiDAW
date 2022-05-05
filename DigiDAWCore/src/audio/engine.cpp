@@ -169,9 +169,6 @@ namespace DigiDAW::Core::Audio
 
 	ReturnCode Engine::SetCurrentOutputDevice(unsigned int device)
 	{
-		if (currentOutputDevice == device)
-			return ReturnCode::Success;
-
 		if (device != -1 && (!currentDevices[device].info.probed || currentDevices[device].info.outputChannels == 0))
 			return ReturnCode::Error;
 
@@ -186,9 +183,6 @@ namespace DigiDAW::Core::Audio
 
 	ReturnCode Engine::SetCurrentInputDevice(unsigned int device)
 	{
-		if (currentInputDevice == device)
-			return ReturnCode::Success;
-
 		if (device != -1 && (!currentDevices[device].info.probed || currentDevices[device].info.inputChannels == 0))
 			return ReturnCode::Error;
 
@@ -405,12 +399,7 @@ namespace DigiDAW::Core::Audio
 	{
 		if (!IsStreamRunning())
 		{
-			if (!IsStreamOpen())
-			{
-				ReturnCode streamError = OpenStream();
-				if (streamError != ReturnCode::Success)
-					return streamError;
-			}
+			OpenStream();
 
 			audioBackend->startStream();
 			mixer.UpdateCurrentTime(audioBackend->getStreamTime());

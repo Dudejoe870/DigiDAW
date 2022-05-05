@@ -40,6 +40,7 @@ namespace DigiDAW::UI
 		std::shared_ptr<Core::Audio::Engine> audioEngine;
 		
 		ImFont* fontHeader1 = nullptr;
+		ImFont* iconFont = nullptr;
 
 		std::vector<Style> styles;
 		unsigned int currentStyle;
@@ -55,9 +56,19 @@ namespace DigiDAW::UI
 
 		void ModifyStyle(ImGuiStyle& style);
 		void SaveSettings();
+
 		void RenderSettingsWindow();
+		void InitializeDockspace(ImGuiID dockspace, ImGuiDockNodeFlags dockspaceFlags, ImVec2 size);
+		void RenderDockspace();
+		void RenderMenuBars();
+
+		bool hasDockspaceBeenInitialized = false;
 
 		bool shouldExit = false;
+
+		const std::string mainWindowDockspace = "MainWindowDock";
+		const std::string dockspaceWindowTitle = "DockSpace";
+		const std::string settingsWindowTitle = "Settings";
 	public:
 		UI(std::shared_ptr<Core::Audio::Engine>& audioEngine);
 

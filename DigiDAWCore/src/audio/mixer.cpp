@@ -191,7 +191,8 @@ namespace DigiDAW::Core::Audio
 				std::vector<float> trackInput((size_t)track.nChannels * nFrames);
 				for (unsigned int channel = 0; channel < (unsigned int)track.nChannels; ++channel)
 					for (unsigned int frame = 0; frame < nFrames; ++frame)
-						trackInput[(channel * nFrames) + frame] = ((float)rand() / RAND_MAX) + 1.0f;
+						//trackInput[(channel * nFrames) + frame] = ((float)rand() / RAND_MAX) + 1.0f;
+						trackInput[(channel * nFrames) + frame] = 0.0f;
 				ProcessTrack(trackInput, track, nFrames, sampleRate);
 			}
 

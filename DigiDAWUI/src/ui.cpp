@@ -9,6 +9,8 @@
 
 #include "imgui-knobs.h"
 
+#include "imgui_internal.h"
+
 namespace DigiDAW::UI
 {
     UI::UI(std::shared_ptr<Core::Audio::Engine>& audioEngine)
@@ -17,6 +19,8 @@ namespace DigiDAW::UI
         this->audioEngine = audioEngine;
 
         ImGuiIO& io = ImGui::GetIO();
+
+        io.ConfigDockingWithShift = true;
 
         io.IniFilename = "layout.ini";
 
@@ -30,6 +34,12 @@ namespace DigiDAW::UI
         fontHeader1 = io.Fonts->AddFontFromMemoryTTF(
             (void*)DigiDAW::UI::Resources::poppins_light_ttf,
             DigiDAW::UI::Resources::poppins_light_ttf_size, 35.0f, &fontConfig);
+
+        static const ImWchar iconRange[] = { 0xf000, 0xffff, 0 };
+        iconFont = io.Fonts->AddFontFromMemoryTTF(
+            (void*)DigiDAW::UI::Resources::fa_solid_ttf,
+            DigiDAW::UI::Resources::fa_solid_ttf_size, 18.0f, &fontConfig, iconRange);
+        io.Fonts->Build();
 
         // Setup Styles
         ImGuiStyle darkStyle;
@@ -196,40 +206,16 @@ namespace DigiDAW::UI
 
 	void UI::Render()
 	{
+        clearColor = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
+
+        RenderMenuBars();
+        RenderDockspace();
+
         // For Development purposes...
-        ImGui::ShowDemoWindow();
+        //ImGui::ShowDemoWindow();
         // ...
-
+        
         RenderSettingsWindow();
-
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-        {
-            if (ImGui::BeginMainMenuBar())
-            {
-                if (ImGui::BeginMenu("File"))
-                {
-                    if (ImGui::MenuItem("Exit"))
-                        shouldExit = true;
-                    ImGui::EndMenu();
-                }
-                if (ImGui::BeginMenu("Edit"))
-                {
-                    if (ImGui::MenuItem("Settings"))
-                        showSettingsWindow = true;
-                    ImGui::EndMenu();
-                }
-                ImGui::EndMainMenuBar();
-            }
-
-            ImGuiViewport* viewport = ImGui::GetMainViewport();
-            ImGui::SetNextWindowPos(viewport->GetWorkCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-            ImGui::SetNextWindowSize(viewport->WorkSize, ImGuiCond_Always);
-            if (ImGui::Begin("Main Window", nullptr, ImGuiWindowFlags_NoDecoration))
-            {
-                ImGui::End();
-            }
-        }
-        ImGui::PopStyleVar();
 	}
 
     void UI::RenderSettingsWindow()
@@ -238,7 +224,7 @@ namespace DigiDAW::UI
         {
             ImGui::SetNextWindowSize(ImVec2(1024.0f, 768.0f), ImGuiCond_Appearing);
             ImGui::SetNextWindowSizeConstraints(ImVec2(915.0f, 138.0f), ImVec2(10000000.0f, 10000000.0f));
-            ImGui::Begin("Settings", &showSettingsWindow, 
+            ImGui::Begin(settingsWindowTitle.c_str(), &showSettingsWindow,
                 ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse);
             {
                 if (ImGui::BeginTabBar("SettingsTabBar"))
@@ -401,6 +387,111 @@ namespace DigiDAW::UI
             }
             ImGui::End();
         }
+    }
+
+    void UI::InitializeDockspace(ImGuiID dockspace, ImGuiDockNodeFlags dockspaceFlags, ImVec2 size)
+    {
+        ImGui::DockBuilderRemoveNode(dockspace);
+        ImGui::DockBuilderAddNode(dockspace, dockspaceFlags | ImGuiDockNodeFlags_DockSpace);
+        ImGui::DockBuilderSetNodeSize(dockspace, size);
+
+        ImGuiID mainId = dockspace;
+        // TODO: Split the dockspace and dock the windows in the default configuration.
+
+        ImGui::DockBuilderFinish(dockspace);
+    }
+
+    void UI::RenderDockspace()
+    {
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        {
+            ImGuiViewport* viewport = ImGui::GetMainViewport();
+            ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_PassthruCentralNode;
+
+            ImGui::SetNextWindowPos(viewport->Pos);
+            ImGui::SetNextWindowSize(viewport->Size);
+            ImGui::SetNextWindowViewport(viewport->ID);
+
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+            ImGui::Begin(dockspaceWindowTitle.c_str(), nullptr,
+                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus |
+                ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoBackground);
+            ImGui::PopStyleVar();
+            {
+                ImGuiID mainDockspace = ImGui::GetID(mainWindowDockspace.c_str());
+                ImGui::DockSpace(mainDockspace, ImVec2(0.0f, 0.0f), dockspaceFlags);
+
+                if (!hasDockspaceBeenInitialized)
+                {
+                    hasDockspaceBeenInitialized = true;
+
+                    // Setup Dockspace
+                    InitializeDockspace(mainDockspace, dockspaceFlags, viewport->Size);
+                }
+            }
+            ImGui::End();
+        }
+        ImGui::PopStyleVar();
+    }
+
+    void UI::RenderMenuBars()
+    {
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        {
+            if (ImGui::BeginViewportSideBar("##MainMenuBar", nullptr, ImGuiDir_Up, ImGui::GetFrameHeight(),
+                ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar))
+            {
+                if (ImGui::BeginMenuBar())
+                {
+                    if (ImGui::BeginMenu("File"))
+                    {
+                        if (ImGui::MenuItem("Exit"))
+                            shouldExit = true;
+                        ImGui::EndMenu();
+                    }
+                    if (ImGui::BeginMenu("Edit"))
+                    {
+                        if (ImGui::MenuItem("Settings"))
+                            showSettingsWindow = true;
+                        ImGui::EndMenu();
+                    }
+                    ImGui::EndMenuBar();
+                }
+            }
+            ImGui::End();
+
+            if (ImGui::BeginViewportSideBar("##MainStatusBar", nullptr, ImGuiDir_Down, ImGui::GetFrameHeight(),
+                ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar))
+            {
+                if (ImGui::BeginMenuBar())
+                {
+                    ImGui::PushFont(iconFont);
+                    if (audioEngine->IsStreamRunning() && audioEngine->IsStreamOpen())
+                    {
+                        ImGui::TextUnformatted((const char*)u8"\uf028");
+                        ImGui::PopFont();
+                    }
+                    else
+                    {
+                        ImGui::TextUnformatted((const char*)u8"\uf6a9");
+                        ImGui::PopFont();
+                        if (ImGui::Button("Restart Audio Engine"))
+                            audioEngine->StartEngine();
+                    }
+
+                    Util::TextRightAlign(
+                        fmt::format("Current API: {}   Sample Rate: {}hz   Buffer Size: {} Samples",
+                            audioEngine->GetAPIDisplayName(audioEngine->GetCurrentAPI()),
+                            audioEngine->GetCurrentSampleRate(),
+                            audioEngine->GetCurrentBufferSize()).c_str(),
+                        10.0f); // Info Text
+                    ImGui::EndMenuBar();
+                }
+            }
+            ImGui::End();
+        }
+        ImGui::PopStyleVar();
     }
 
     ImVec4 UI::GetClearColor()

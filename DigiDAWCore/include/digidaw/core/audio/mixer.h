@@ -22,7 +22,7 @@ namespace DigiDAW::Core::Audio
 	 * |
 	 * bus buffer 
 	 * (this is where bus processing begins, any track can output to any number of buses.
-	 * bus gain and bus panning is applied here.)
+	 * bus gain and bus panning is applied here)
 	 */
 	class Mixer
 	{

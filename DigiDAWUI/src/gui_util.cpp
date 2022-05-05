@@ -11,6 +11,15 @@ namespace DigiDAW::UI
         float textWidth = ImGui::CalcTextSize(text).x;
 
         ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-        ImGui::Text(text);
+        ImGui::TextUnformatted(text);
+    }
+
+    void Util::TextRightAlign(const char* text, float padding)
+    {
+        float windowWidth = ImGui::GetWindowSize().x;
+        float textWidth = ImGui::CalcTextSize(text).x;
+
+        ImGui::SetCursorPosX((windowWidth - textWidth) - padding);
+        ImGui::TextUnformatted(text);
     }
 }

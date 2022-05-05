@@ -61,7 +61,18 @@ namespace DigiDAW::Core::Audio
 			inline bool operator==(const Mixable& rhs) { return this == &rhs; }
 		};
 
-		// A Track is simply a stream of audio with gain, panning, and VST effects / input (coming some day), plus the ability to output to any number of bus channels.
+		/*
+		 * The idea for this Track architecture is to use buses to output to the output device channels
+		 * AND act as a way to organize groups of tracks (for example, you could have a bus specifically for drums, 
+		 * or a stereo setup for recording Piano, etc.) Which is a little different to how other DAWs work, 
+		 * as aux tracks are usually what you use to group tracks together, and secondary buses usually output to the main bus, 
+		 * while in this case, buses can only output to the main output device. 
+		 * As such it's easier to understand the relationship between different types of "Mixables", 
+		 * and is more straightforward to organize things (In combination with Track folders).
+		 */
+
+		// A Track is simply a stream of audio (from the input device or from the output of a VST driven with MIDI) 
+		// with gain, panning, and audio effects (including VSTs), plus the ability to output to any number of bus channels.
 		struct Track : Mixable
 		{
 			// TODO: Other track specific features.
@@ -81,8 +92,8 @@ namespace DigiDAW::Core::Audio
 			inline bool operator==(const Track& rhs) { return this == &rhs; }
 		};
 
-		// A Bus is the same as a track except it recieves other tracks as inputs + can output to the current output device / buffer (if exporting) 
-		// if specified (as well as output to other buses)
+		// A Bus is the same as a track except it recieves other tracks as inputs + can output to the 
+		// current output device / buffer (if exporting) if specified.
 		struct Bus : Mixable
 		{
 			std::vector<std::vector<unsigned int>> busChannelToDeviceOutputChannels;

@@ -49,7 +49,7 @@ int main()
 					std::vector<unsigned int> { 0 },
                     std::vector<unsigned int> { 1 }
 				})
-			})); // Make a Stereo Track that outputs both it's channels to the L and R channels of the mainBus.
+			})); // Make a Stereo Track that outputs both its channels to the L and R channels of the mainBus.
     */
     audioEngine->trackState.AddTrack(
         Core::Audio::TrackState::Track("Track 1",
@@ -61,7 +61,7 @@ int main()
                 {
                     std::vector<unsigned int> { 0, 1 }
                 })
-            })); // Make a Mono Track that outputs both it's channels to the L and R channels of the mainBus.
+            })); // Make a Mono Track that outputs both its channels to the L and R channels of the mainBus.
 
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);
@@ -90,6 +90,7 @@ int main()
     //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
 #endif
+    glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
     // Create window with graphics context
     GLFWwindow* window = glfwCreateWindow(1280, 720, "DigiDAW", NULL, NULL);

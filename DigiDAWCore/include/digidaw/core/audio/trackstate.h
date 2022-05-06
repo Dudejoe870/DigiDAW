@@ -126,7 +126,14 @@ namespace DigiDAW::Core::Audio
 		void RemoveTrack(Track& track);
 		void RemoveBus(Bus& bus);
 
-		const std::vector<Track>& GetAllTracks();
-		const std::vector<Bus>& GetAllBuses();
+		std::vector<TrackState::Track>& GetAllTracks()
+		{
+			return currentTracks;
+		}
+
+		std::vector<TrackState::Bus>& GetAllBuses()
+		{
+			return currentBuses;
+		}
 	};
 }

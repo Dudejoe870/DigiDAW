@@ -47,9 +47,27 @@ namespace DigiDAW::Core::Audio
 				buffer.resize(nChannels * nFrames);
 			}
 		};
+		
+		struct TrackBuffers
+		{
+			MixBuffer mainTrackBuffer;
+			std::vector<std::vector<MixBuffer>> busOutputBuffers;
+			
+			TrackBuffers()
+			{
+			}
 
-		std::unordered_map<const TrackState::Track*, MixBuffer> trackBuffers;
+			TrackBuffers(MixBuffer mainTrackBuffer, std::vector<std::vector<MixBuffer>>& busOutputBuffers)
+			{
+				this->mainTrackBuffer = mainTrackBuffer;
+				this->busOutputBuffers = busOutputBuffers;
+			}
+		};
+
+		std::unordered_map<const TrackState::Track*, TrackBuffers> trackBuffers;
 		std::unordered_map<const TrackState::Bus*, MixBuffer> busBuffers;
+
+		TrackBuffers GetTrackBuffers(const TrackState::Track& track, unsigned int nFrames, unsigned int nChannels);
 
 		void ApplyGain(float gain, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);
 		void ApplyStereoPanning(float pan, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);

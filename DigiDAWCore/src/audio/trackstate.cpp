@@ -29,14 +29,4 @@ namespace DigiDAW::Core::Audio
 		currentBuses.erase(std::find(currentBuses.begin(), currentBuses.end(), bus));
 		for (auto& func : removeBusCallbacks) func(bus);
 	}
-
-	const std::vector<TrackState::Track>& TrackState::GetAllTracks()
-	{
-		return currentTracks;
-	}
-
-	const std::vector<TrackState::Bus>& TrackState::GetAllBuses()
-	{
-		return currentBuses;
-	}
 }

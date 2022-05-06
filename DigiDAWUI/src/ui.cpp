@@ -107,7 +107,7 @@ namespace DigiDAW::UI
             settingsInputDevice = -1;
         else
             settingsInputDevice = GetDeviceByName(settingsStructure["Audio"]["inputDevice"]);
-        audioEngine->SetCurrentInputDevice(settingsInputDevice);
+        if (settingsInputDevice != -1) audioEngine->SetCurrentInputDevice(settingsInputDevice);
 
         // Set the current output device.
         unsigned int settingsOutputDevice = audioEngine->GetCurrentOutputDevice();
@@ -115,7 +115,7 @@ namespace DigiDAW::UI
             settingsOutputDevice = -1;
         else
             settingsOutputDevice = GetDeviceByName(settingsStructure["Audio"]["outputDevice"]);
-        audioEngine->SetCurrentOutputDevice(settingsOutputDevice);
+        if (settingsOutputDevice != -1) audioEngine->SetCurrentOutputDevice(settingsOutputDevice);
 
         // Set the sample rate by default to the fastest supported sample rate.
         const std::vector<unsigned int>& supportedSampleRates = audioEngine->GetSupportedSampleRates();

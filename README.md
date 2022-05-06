@@ -7,6 +7,12 @@ DigiDAW is a Digital Audio Workstation focused on being easy to use, free, and c
 
 **[CURRENTLY VERY WORK IN PROGRESS, FEATURES COULD BE COMPLETELY NON-EXISTENT, BUGGY, OR BROKEN. PLEASE BE ADVISED]**
 
+>Note: This software compiles with AVX2 support by default. 
+If you do not have a CPU from 2013 or later (2015 or later for AMD) then 
+you can choose to use only AVX, however if your CPU doesn't support 
+even that you can disable SIMD entirely (not recommended) 
+using the DIGIDAW_COMPILE_WITH_AVX and DIGIDAW_AVX2 compile options respectively.
+
 ## Supported Audio Backends
 
 Thanks to [rtaudio](https://github.com/thestk/rtaudio), DigiDAW supports a variety of Audio Backends.

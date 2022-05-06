@@ -11,6 +11,45 @@ namespace DigiDAW::Core::Detail
 	 */
 	class SimdHelper
 	{
+	private:
+		const float ln10 = 2.30258509299f;
+
+		// Based off https://github.com/jhjourdan/SIMD-math-prims/blob/master/simd_math_prims.h
+		template<unsigned N, class V>
+		static void LnVector(simdpp::any_float32<N, V> src, simdpp::any_float32<N, V> dst)
+		{
+			simdpp::int32<N> iSrc = simdpp::bit_cast<simdpp::int32<N>>(src);
+
+			// exp = src >> 23;
+			simdpp::float32<N> exp = iSrc >> 23;
+
+			// addcst = src > 0 ? -127 * log(2) + constant term of polynomial : -(float)INFINITY;
+			simdpp::float32<N> addcst = simdpp::blend(-89.970756366f, -(float)INFINITY, src > 0);
+
+			// src = (src & 0x7FFFFF) | 0x3F800000;
+			iSrc = (iSrc & 0x7FFFFF) | 0x3F800000;
+			// x = (float32)src;
+			simdpp::float32<N> x = simdpp::bit_cast<simdpp::float32<N>>(iSrc);
+
+			/* (From original scalar reference code)
+			 *  Generated in Sollya using:
+			 *	> f = remez(log(x)-(x-1)*log(2),
+			 *			[|1,(x-1)*(x-2), (x-1)*(x-2)*x, (x-1)*(x-2)*x*x,
+			 *			  (x-1)*(x-2)*x*x*x|], [1,2], 1, 1e-8);
+			 *	> plot(f+(x-1)*log(2)-log(x), [1,2]);
+			 *	> f+(x-1)*log(2)
+			 */
+			dst = x * (3.529304993f + x * (-2.461222105f + x * (1.130626167f +
+					x * (-0.288739945f + x * 3.110401639e-2f))))
+					+ (addcst + 0.6931471805f * exp);
+		}
+
+		template<unsigned N, class V>
+		static void Log10Vector(simdpp::any_float32<N, V> src, simdpp::any_float32<N, V> dst)
+		{
+			LnVector(src, dst);
+			dst /= ln10;
+		}
 	public:
 		static void SetBuffer(float* dst, unsigned char value, size_t length, size_t offset)
 		{

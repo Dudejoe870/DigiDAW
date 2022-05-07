@@ -26,6 +26,25 @@ namespace DigiDAW::Core::Audio
 	 */
 	class Mixer
 	{
+	public:
+		struct ChannelInfo
+		{
+			float averageAmplitude;
+
+			ChannelInfo()
+			{
+				this->averageAmplitude = 0.0f;
+			}
+		};
+
+		struct MixableInfo
+		{
+			std::vector<ChannelInfo> channels;
+
+			MixableInfo()
+			{
+			}
+		};
 	private:
 		bool doTestTone;
 
@@ -67,6 +86,14 @@ namespace DigiDAW::Core::Audio
 		std::unordered_map<const TrackState::Track*, TrackBuffers> trackBuffers;
 		std::unordered_map<const TrackState::Bus*, MixBuffer> busBuffers;
 
+		std::unordered_map<const TrackState::Mixable*, MixableInfo> mixableInfo;
+
+		std::vector<ChannelInfo> outputChannels;
+
+		double streamDeltaTime = 0.0;
+		double streamLastTime = 0.0;
+		double updateCounter = 0.0;
+
 		TrackBuffers GetTrackBuffers(const TrackState::Track& track, unsigned int nFrames, unsigned int nChannels);
 
 		void ApplyGain(float gain, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);
@@ -75,6 +102,8 @@ namespace DigiDAW::Core::Audio
 		void ProcessTrack(std::vector<float>& trackInputBuffer, const TrackState::Track& track, unsigned int nFrames, unsigned int sampleRate);
 		void ProcessBus(const TrackState::Bus& bus, unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate);
 	public:
+		double updateInterval = 0.03;
+
 		Mixer(Engine& audioEngine);
 
 		void UpdateAllTrackBuffers();
@@ -91,5 +120,15 @@ namespace DigiDAW::Core::Audio
 
 		void StartTestTone();
 		void EndTestTone();
+
+		const MixableInfo& GetMixableInfo(const TrackState::Mixable& mixable)
+		{
+			return mixableInfo[&mixable];
+		}
+
+		const std::vector<ChannelInfo>& GetOutputChannels()
+		{
+			return outputChannels;
+		}
 	};
 }

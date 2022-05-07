@@ -34,6 +34,9 @@ namespace DigiDAW::UI
 		// UI State
 		bool showDemoWindow = true;
 		bool showSettingsWindow = false;
+		bool showTracksWindow = true;
+		bool showBusesWindow = true;
+		bool showTimelineWindow = true;
 
 		ImVec4 clearColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -57,7 +60,12 @@ namespace DigiDAW::UI
 		void ModifyStyle(ImGuiStyle& style);
 		void SaveSettings();
 
+		void RenderTracksWindow();
+		void RenderBusesWindow();
+		void RenderTimelineWindow();
+
 		void RenderSettingsWindow();
+		
 		void InitializeDockspace(ImGuiID dockspace, ImGuiDockNodeFlags dockspaceFlags, ImVec2 size);
 		void RenderDockspace();
 		void RenderMenuBars();
@@ -69,6 +77,9 @@ namespace DigiDAW::UI
 		const std::string mainWindowDockspace = "MainWindowDock";
 		const std::string dockspaceWindowTitle = "DockSpace";
 		const std::string settingsWindowTitle = "Settings";
+		const std::string tracksWindowTitle = "Tracks";
+		const std::string busesWindowTitle = "Buses";
+		const std::string timelineWindowTitle = "Timeline";
 	public:
 		UI(std::shared_ptr<Core::Audio::Engine>& audioEngine);
 

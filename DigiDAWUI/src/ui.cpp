@@ -176,6 +176,10 @@ namespace DigiDAW::UI
         style.FrameRounding = 3.0f;
         style.FrameBorderSize = 0.0f;
 
+        // A little tab rounding and no border.
+        style.TabRounding = 0.4f;
+        style.TabBorderSize = 0.0f;
+
         // Align the Window title to the center, add window border, and no window collapse arrow.
         // (double-click to collapse still works without the no collapse flag active per window)
         style.WindowTitleAlign = ImVec2(0.5f, 0.5f);
@@ -215,6 +219,10 @@ namespace DigiDAW::UI
         //ImGui::ShowDemoWindow();
         // ...
         
+        RenderTracksWindow();
+        RenderBusesWindow();
+        RenderTimelineWindow();
+
         RenderSettingsWindow();
 	}
 
@@ -389,6 +397,52 @@ namespace DigiDAW::UI
         }
     }
 
+    void UI::RenderTracksWindow()
+    {
+        if (showTracksWindow)
+        {
+            if (ImGui::Begin(tracksWindowTitle.c_str(), &showTracksWindow))
+            {
+                const std::vector<Core::Audio::Mixer::ChannelInfo>& outputChannels = audioEngine->mixer.GetOutputChannels();
+                if (outputChannels.size() > 0)
+                {
+                    if (outputChannels.size() >= 2)
+                        Util::DrawAudioMeterStereo(
+                            Util::AmplitudeToDecibelPercentage(outputChannels[0].averageAmplitude), 
+                            Util::AmplitudeToDecibelPercentage(outputChannels[1].averageAmplitude));
+                    else
+                        Util::DrawAudioMeter(
+                            Util::AmplitudeToDecibelPercentage(outputChannels[0].averageAmplitude));
+                }
+            }
+            ImGui::End();
+        }
+    }
+
+    void UI::RenderBusesWindow()
+    {
+        if (showBusesWindow)
+        {
+            if (ImGui::Begin(busesWindowTitle.c_str(), &showBusesWindow))
+            {
+
+            }
+            ImGui::End();
+        }
+    }
+
+    void UI::RenderTimelineWindow()
+    {
+        if (showTimelineWindow)
+        {
+            if (ImGui::Begin(timelineWindowTitle.c_str(), &showTimelineWindow))
+            {
+
+            }
+            ImGui::End();
+        }
+    }
+
     void UI::InitializeDockspace(ImGuiID dockspace, ImGuiDockNodeFlags dockspaceFlags, ImVec2 size)
     {
         ImGui::DockBuilderRemoveNode(dockspace);
@@ -396,7 +450,12 @@ namespace DigiDAW::UI
         ImGui::DockBuilderSetNodeSize(dockspace, size);
 
         ImGuiID mainId = dockspace;
-        // TODO: Split the dockspace and dock the windows in the default configuration.
+        ImGuiID bottomId = ImGui::DockBuilderSplitNode(mainId, ImGuiDir_Down, 0.3f, nullptr, &mainId);
+        ImGuiID bottomRightId = ImGui::DockBuilderSplitNode(bottomId, ImGuiDir_Right, 0.25f, nullptr, &bottomId);
+
+        ImGui::DockBuilderDockWindow(timelineWindowTitle.c_str(), mainId);
+        ImGui::DockBuilderDockWindow(tracksWindowTitle.c_str(), bottomId);
+        ImGui::DockBuilderDockWindow(busesWindowTitle.c_str(), bottomRightId);
 
         ImGui::DockBuilderFinish(dockspace);
     }

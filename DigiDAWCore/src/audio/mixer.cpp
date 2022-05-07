@@ -193,15 +193,16 @@ namespace DigiDAW::Core::Audio
 		unsigned int nOutChannels, unsigned int nInChannels, unsigned int sampleRate)
 	{
 		currentTime = time;
+		streamDeltaTime = currentTime - streamLastTime;
+
+		const std::vector<TrackState::Track>& tracks = audioEngine.trackState.GetAllTracks();
+		const std::vector<TrackState::Bus>& buses = audioEngine.trackState.GetAllBuses();
 
 		if (!doTestTone)
 		{
-			const std::vector<TrackState::Track>& tracks = audioEngine.trackState.GetAllTracks();
-			const std::vector<TrackState::Bus>& buses = audioEngine.trackState.GetAllBuses();
-
 			// Zero out bus buffers
 			for (const TrackState::Bus& bus : buses)
-				Detail::SimdHelper::SetBuffer(busBuffers[&bus].buffer.data(), 0, (size_t)bus.nChannels * nFrames, 0);
+				Detail::SimdHelper::SetBuffer(busBuffers[&bus].buffer.data(), 0.0f, (size_t)bus.nChannels * nFrames, 0);
 
 			// Process Tracks
 			for (const TrackState::Track& track : tracks)
@@ -243,16 +244,58 @@ namespace DigiDAW::Core::Audio
 		}
 		else
 		{
-			std::vector<float> monoOutput;
+			std::vector<float> monoOutput(nFrames);
 			for (unsigned int frame = 0; frame < nFrames; ++frame)
 			{
 				double sampleTime = (time + ((double)frame / (double)sampleRate)) - testToneStartTime;
-				monoOutput.push_back((float)((0.10 * (std::clamp(1.0 - sampleTime, 0.0, 1.0))) * std::sin(2 * pi * 440.0 * sampleTime)));
+				float amplitude = (float)((0.10 * (std::clamp(1.0 - sampleTime, 0.0, 1.0))) * ((std::sinf(2 * pi * 440.0 * sampleTime) * 0.5f) + 0.5f));
+				monoOutput[frame] = amplitude;
 			}
 
 			for (unsigned int channel = 0; channel < nOutChannels; ++channel)
 				std::memcpy(&outputBuffer[channel * nFrames], monoOutput.data(), sizeof(float) * monoOutput.size());
 		}
+
+		// Update Mixable Info on an interval (no need to do it every buffer frame)
+		updateCounter += streamDeltaTime;
+		if (updateCounter >= updateInterval)
+		{
+			updateCounter = 0.0;
+
+			std::vector<float> tempBuffer;
+
+			for (const TrackState::Bus& bus : buses)
+			{
+				Detail::SimdHelper::GetBufferAverageMultiChannel(
+					busBuffers[&bus].buffer.data(),
+					nFrames, (size_t)bus.nChannels,
+					tempBuffer);
+				mixableInfo[&bus].channels.resize((size_t)bus.nChannels);
+				for (unsigned int channel = 0; channel < (unsigned int)bus.nChannels; ++channel)
+					mixableInfo[&bus].channels[channel].averageAmplitude = tempBuffer[channel];
+			}
+
+			for (const TrackState::Track& track : tracks)
+			{
+				Detail::SimdHelper::GetBufferAverageMultiChannel(
+					trackBuffers[&track].mainTrackBuffer.buffer.data(),
+					nFrames, (size_t)track.nChannels,
+					tempBuffer);
+				mixableInfo[&track].channels.resize((size_t)track.nChannels);
+				for (unsigned int channel = 0; channel < (unsigned int)track.nChannels; ++channel)
+					mixableInfo[&track].channels[channel].averageAmplitude = tempBuffer[channel];
+			}
+
+			Detail::SimdHelper::GetBufferAverageMultiChannel(
+				outputBuffer, 
+				nFrames, nOutChannels, 
+				tempBuffer);
+			outputChannels.resize(nOutChannels);
+			for (unsigned int channel = 0; channel < nOutChannels; ++channel)
+				outputChannels[channel].averageAmplitude = tempBuffer[channel];
+		}
+
+		streamLastTime = currentTime;
 	}
 
 	void Mixer::StartTestTone()

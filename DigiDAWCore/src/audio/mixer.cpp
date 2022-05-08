@@ -34,6 +34,96 @@ namespace DigiDAW::Core::Audio
 			{
 				busBuffers.erase(&bus);
 			});
+
+		mixerThread = std::thread(
+			[&]()
+			{
+				const std::vector<TrackState::Track>& tracks = audioEngine.trackState.GetAllTracks();
+				const std::vector<TrackState::Bus>& buses = audioEngine.trackState.GetAllBuses();
+
+				std::vector<float> avgBuffer;
+				std::vector<float> peakBuffer;
+
+				while (running)
+				{
+					if (!tracks.empty() || !buses.empty())
+					{
+						shouldAddToLookback = false;
+						for (const TrackState::Bus& bus : buses)
+						{
+							if (!mixableInfo[&bus].lookbackBuffers.empty())
+							{
+								Detail::SimdHelper::GetBufferAverageAndPeakMultiChannel(
+									mixableInfo[&bus].lookbackBuffers,
+									mixableInfo[&bus].lookbackBuffers[0].size(),
+									avgBuffer,
+									peakBuffer);
+								mixableInfo[&bus].channels.resize((size_t)bus.nChannels);
+								for (unsigned int channel = 0; channel < (unsigned int)bus.nChannels; ++channel)
+								{
+									mixableInfo[&bus].channels[channel].averageAmplitude = avgBuffer[channel];
+									mixableInfo[&bus].channels[channel].peakAmplitude = peakBuffer[channel];
+								}
+
+								// Clear lookback buffers
+								for (std::vector<float>& buffer : mixableInfo[&bus].lookbackBuffers)
+									buffer.clear();
+							}
+						}
+
+						for (const TrackState::Track& track : tracks)
+						{
+							if (!mixableInfo[&track].lookbackBuffers.empty())
+							{
+								Detail::SimdHelper::GetBufferAverageAndPeakMultiChannel(
+									mixableInfo[&track].lookbackBuffers,
+									mixableInfo[&track].lookbackBuffers[0].size(),
+									avgBuffer,
+									peakBuffer);
+								mixableInfo[&track].channels.resize((size_t)track.nChannels);
+								for (unsigned int channel = 0; channel < (unsigned int)track.nChannels; ++channel)
+								{
+									mixableInfo[&track].channels[channel].averageAmplitude = avgBuffer[channel];
+									mixableInfo[&track].channels[channel].peakAmplitude = peakBuffer[channel];
+								}
+
+								// Clear lookback buffers
+								for (std::vector<float>& buffer : mixableInfo[&track].lookbackBuffers)
+									buffer.clear();
+							}
+						}
+
+						if (!outputInfo.lookbackBuffers.empty())
+						{
+							Detail::SimdHelper::GetBufferAverageAndPeakMultiChannel(
+								outputInfo.lookbackBuffers,
+								outputInfo.lookbackBuffers[0].size(),
+								avgBuffer,
+								peakBuffer);
+							outputInfo.channels.resize(nOutChannels);
+							for (unsigned int channel = 0; channel < nOutChannels; ++channel)
+							{
+								outputInfo.channels[channel].averageAmplitude = avgBuffer[channel];
+								outputInfo.channels[channel].peakAmplitude = peakBuffer[channel];
+							}
+
+							// Clear lookback buffers
+							for (std::vector<float>& buffer : outputInfo.lookbackBuffers)
+								buffer.clear();
+						}
+
+						shouldAddToLookback = true;
+					}
+
+					std::this_thread::sleep_for(std::chrono::nanoseconds((unsigned long long)(meterUpdateInterval * 1000000000.0)));
+				}
+			});
+	}
+
+	Mixer::~Mixer()
+	{
+		running = false;
+		mixerThread.join();
 	}
 
 	void Mixer::UpdateAllTrackBuffers()
@@ -124,6 +214,10 @@ namespace DigiDAW::Core::Audio
 		if (track.nChannels == TrackState::ChannelNumber::Stereo)
 			ApplyStereoPanning(track.pan, trackBuffer, (unsigned int)track.nChannels, nFrames);
 
+		// Add final output to the lookback buffer
+		std::vector<std::vector<float>>& lookbackBuffers = mixableInfo[&track].lookbackBuffers;
+		AddToLookback(trackBuffer.data(), lookbackBuffers, nFrames, (unsigned int)track.nChannels);
+
 		// Send out to buses by looping through all the bus outputs 
 		// each channel of this track has a mapping to the input channels of each bus it sends out to
 		for (unsigned int output = 0; output < track.outputs.size(); ++output)
@@ -138,7 +232,8 @@ namespace DigiDAW::Core::Audio
 				// so that we can apply panning to Mono tracks.
 				std::vector<float>& channelOutputBuffer = trackBuffers[&track].busOutputBuffers[output][channel].buffer;
 				for (unsigned int outChannel = 0; outChannel < (unsigned int)busOutput.inputChannelToOutputChannels[channel].size(); ++outChannel)
-					Detail::SimdHelper::CopyBuffer(trackBuffer.data(), channelOutputBuffer.data(), channel * nFrames, outChannel * nFrames, nFrames);
+					Detail::SimdHelper::CopyBuffer(trackBuffer.data(), channelOutputBuffer.data(), 
+						channel * nFrames, outChannel * nFrames, nFrames);
 
 				// TODO: Support Surround Panning
 				// Apply panning (for panning Mono tracks to Stereo buses)
@@ -171,18 +266,22 @@ namespace DigiDAW::Core::Audio
 		if (bus.busChannelToDeviceOutputChannels.empty()) return;
 
 		if (!busBuffers.contains(&bus)) return;
-		std::vector<float>& outputBuffer = busBuffers[&bus].buffer;
-		if (outputBuffer.empty()) return;
+		std::vector<float>& busBuffer = busBuffers[&bus].buffer;
+		if (busBuffer.empty()) return;
 
 		// TODO: Apply effects
 
 		// TODO: Support Surround Panning
 		// Apply panning
 		if (bus.nChannels == TrackState::ChannelNumber::Stereo)
-			ApplyStereoPanning(bus.pan, outputBuffer, (unsigned int)bus.nChannels, nFrames);
+			ApplyStereoPanning(bus.pan, busBuffer, (unsigned int)bus.nChannels, nFrames);
 
 		// Apply gain
-		ApplyGain(bus.gain, outputBuffer, (unsigned int)bus.nChannels, nFrames);
+		ApplyGain(bus.gain, busBuffer, (unsigned int)bus.nChannels, nFrames);
+
+		// Add final output to the lookback buffer
+		std::vector<std::vector<float>>& lookbackBuffers = mixableInfo[&bus].lookbackBuffers;
+		AddToLookback(busBuffer.data(), lookbackBuffers, nFrames, (unsigned int)bus.nChannels);
 	}
 
 	void Mixer::Mix(
@@ -192,8 +291,9 @@ namespace DigiDAW::Core::Audio
 		unsigned int nFrames,
 		unsigned int nOutChannels, unsigned int nInChannels, unsigned int sampleRate)
 	{
+		this->nOutChannels = nOutChannels;
+
 		currentTime = time;
-		streamDeltaTime = currentTime - streamLastTime;
 
 		const std::vector<TrackState::Track>& tracks = audioEngine.trackState.GetAllTracks();
 		const std::vector<TrackState::Bus>& buses = audioEngine.trackState.GetAllBuses();
@@ -211,8 +311,8 @@ namespace DigiDAW::Core::Audio
 				std::vector<float> trackInput((size_t)track.nChannels * nFrames);
 				for (unsigned int channel = 0; channel < (unsigned int)track.nChannels; ++channel)
 					for (unsigned int frame = 0; frame < nFrames; ++frame)
-						trackInput[(channel * nFrames) + frame] = ((float)rand() / RAND_MAX) + 1.0f;
-						//trackInput[(channel * nFrames) + frame] = 0.0f;
+						//trackInput[(channel * nFrames) + frame] = ((float)rand() / RAND_MAX) + 1.0f;
+						trackInput[(channel * nFrames) + frame] = 0.0f;
 				ProcessTrack(trackInput, track, nFrames, sampleRate);
 			}
 
@@ -256,46 +356,21 @@ namespace DigiDAW::Core::Audio
 				std::memcpy(&outputBuffer[channel * nFrames], monoOutput.data(), sizeof(float) * monoOutput.size());
 		}
 
-		// Update Mixable Info on an interval (no need to do it every buffer frame)
-		updateCounter += streamDeltaTime;
-		if (updateCounter >= updateInterval)
+		AddToLookback(outputBuffer, outputInfo.lookbackBuffers, nFrames, nOutChannels);
+	}
+
+	void Mixer::AddToLookback(float* src, std::vector<std::vector<float>>& dst, size_t length, unsigned int nChannels)
+	{
+		if (!shouldAddToLookback) return;
+		
+		dst.resize(nChannels);
+		for (unsigned int channel = 0; channel < nChannels; ++channel)
 		{
-			updateCounter = 0.0;
-
-			std::vector<float> tempBuffer;
-
-			for (const TrackState::Bus& bus : buses)
-			{
-				Detail::SimdHelper::GetBufferAverageMultiChannel(
-					busBuffers[&bus].buffer.data(),
-					nFrames, (size_t)bus.nChannels,
-					tempBuffer);
-				mixableInfo[&bus].channels.resize((size_t)bus.nChannels);
-				for (unsigned int channel = 0; channel < (unsigned int)bus.nChannels; ++channel)
-					mixableInfo[&bus].channels[channel].averageAmplitude = tempBuffer[channel];
-			}
-
-			for (const TrackState::Track& track : tracks)
-			{
-				Detail::SimdHelper::GetBufferAverageMultiChannel(
-					trackBuffers[&track].mainTrackBuffer.buffer.data(),
-					nFrames, (size_t)track.nChannels,
-					tempBuffer);
-				mixableInfo[&track].channels.resize((size_t)track.nChannels);
-				for (unsigned int channel = 0; channel < (unsigned int)track.nChannels; ++channel)
-					mixableInfo[&track].channels[channel].averageAmplitude = tempBuffer[channel];
-			}
-
-			Detail::SimdHelper::GetBufferAverageMultiChannel(
-				outputBuffer, 
-				nFrames, nOutChannels, 
-				tempBuffer);
-			outputChannels.resize(nOutChannels);
-			for (unsigned int channel = 0; channel < nOutChannels; ++channel)
-				outputChannels[channel].averageAmplitude = tempBuffer[channel];
+			std::vector<float>& buffer = dst[channel];
+			size_t offset = buffer.size();
+			buffer.resize(buffer.size() + length);
+			Detail::SimdHelper::CopyBuffer(src, buffer.data(), channel * length, offset, length);
 		}
-
-		streamLastTime = currentTime;
 	}
 
 	void Mixer::StartTestTone()

@@ -52,20 +52,37 @@ namespace DigiDAW::Core::Detail
 			return LnVector(src) * rcpLn10; // ln(src) / ln(10)
 		}
 	public:
-		static void GetBufferAverageMultiChannel(float* src, size_t length, unsigned int nChannels, std::vector<float>& out)
+		static void GetBufferAverageAndPeakMultiChannel(const std::vector<std::vector<float>>& src, size_t length, std::vector<float>& avgOut, std::vector<float>& peakOut)
 		{
-			const size_t iterations = length / SIMDPP_FAST_FLOAT32_SIZE;
-			out.resize(nChannels);
-			std::memset(out.data(), 0, out.size() * sizeof(float));
-			for (unsigned int channel = 0; channel < nChannels; ++channel)
+			avgOut.resize(src.size());
+			peakOut.resize(src.size());
+
+			for (unsigned int channel = 0; channel < src.size(); ++channel)
 			{
-				for (size_t i = 0; i < iterations; ++i)
+				float peak = 0.0f;
+				avgOut[channel] = 0.0f;
+
+				size_t i;
+				for (i = 0; i + SIMDPP_FAST_FLOAT32_SIZE <= length; i += SIMDPP_FAST_FLOAT32_SIZE)
 				{
-					simdpp::float32v xmmA = simdpp::load(&src[(i * SIMDPP_FAST_FLOAT32_SIZE) + (channel * length)]);
-					out[channel] += simdpp::reduce_add(xmmA);
+					simdpp::float32v xmmA = simdpp::load(&src[channel][i]);
+					avgOut[channel] += simdpp::reduce_add(xmmA);
+
+					simdpp::float32v xmmB = simdpp::splat(peak);
+					simdpp::float32v xmmC = simdpp::blend(xmmA, xmmB, xmmA > xmmB);
+					peak = simdpp::reduce_max(xmmC);
 				}
+				for (; i < length; ++i) // Calculate the remaining length using scalar code.
+				{
+					float a = src[channel][i];
+					avgOut[channel] += a;
+
+					peak = std::max(peak, a);
+				}
+
+				peakOut[channel] = peak;
 			}
-			for (float& avg : out)
+			for (float& avg : avgOut)
 				avg /= length;
 		}
 
@@ -73,51 +90,64 @@ namespace DigiDAW::Core::Detail
 		{
 			simdpp::float32v xmmA = simdpp::splat(value); // Load "value" into all the places of the vector.
 
-			const size_t iterations = length / SIMDPP_FAST_FLOAT32_SIZE;
-			for (size_t i = 0; i < iterations; ++i)
-				simdpp::store(&dst[(i * SIMDPP_FAST_FLOAT32_SIZE) + offset], xmmA); // Store the vector into the destination buffer.
+			size_t i;
+			for (i = 0; i + SIMDPP_FAST_FLOAT32_SIZE <= length; i += SIMDPP_FAST_FLOAT32_SIZE)
+				simdpp::store(&dst[i + offset], xmmA); // Store the vector into the destination buffer.
+			for (; i < length; ++i) // Set the remaining length using scalar code.
+				dst[i + offset] = value;
 		}
 
 		static void CopyBuffer(float* src, float* dst, size_t srcOffset, size_t dstOffset, size_t length)
 		{
-			const size_t iterations = length / SIMDPP_FAST_FLOAT32_SIZE;
-			for (size_t i = 0; i < iterations; ++i)
+			size_t i;
+			for (i = 0; i + SIMDPP_FAST_FLOAT32_SIZE <= length; i += SIMDPP_FAST_FLOAT32_SIZE)
 			{
-				simdpp::float32v xmmA = simdpp::load(&src[(i * SIMDPP_FAST_FLOAT32_SIZE) + srcOffset]); // Load SIMDPP_FAST_FLOAT32_SIZE floats from the source buffer into the vector.
-				simdpp::store(&dst[(i * SIMDPP_FAST_FLOAT32_SIZE) + dstOffset], xmmA); // Store the SIMDPP_FAST_FLOAT32_SIZE floats into the destination buffer.
+				simdpp::float32v xmmA = simdpp::load(&src[i + srcOffset]); // Load SIMDPP_FAST_FLOAT32_SIZE floats from the source buffer into the vector.
+				simdpp::store(&dst[i + dstOffset], xmmA); // Store the SIMDPP_FAST_FLOAT32_SIZE floats into the destination buffer.
 			}
+			for (; i < length; ++i) // Copy the remaining length using scalar code.
+				dst[i + dstOffset] = src[i + srcOffset];
 		}
 
 		static void AddBuffer(float* src, float* dst, size_t srcOffset, size_t dstOffset, size_t length)
 		{
-			const size_t iterations = length / SIMDPP_FAST_FLOAT32_SIZE;
-			for (size_t i = 0; i < iterations; ++i)
+			size_t i;
+			for (i = 0; i + SIMDPP_FAST_FLOAT32_SIZE <= length; i += SIMDPP_FAST_FLOAT32_SIZE)
 			{
-				simdpp::float32v xmmA = simdpp::load(&src[(i * SIMDPP_FAST_FLOAT32_SIZE) + srcOffset]); // Load SIMDPP_FAST_FLOAT32_SIZE floats from the source buffer into the vector.
-				simdpp::float32v xmmB = simdpp::load(&dst[(i * SIMDPP_FAST_FLOAT32_SIZE) + dstOffset]); // Load SIMDPP_FAST_FLOAT32_SIZE floats from the destination buffer into the vector.
-				simdpp::store(&dst[(i * SIMDPP_FAST_FLOAT32_SIZE) + dstOffset], xmmA + xmmB); // Store back into the destination buffer the sum of the two vectors.
+				simdpp::float32v xmmA = simdpp::load(&src[i + srcOffset]); // Load SIMDPP_FAST_FLOAT32_SIZE floats from the source buffer into the vector.
+				simdpp::float32v xmmB = simdpp::load(&dst[i + dstOffset]); // Load SIMDPP_FAST_FLOAT32_SIZE floats from the destination buffer into the vector.
+				simdpp::store(&dst[i + dstOffset], xmmA + xmmB); // Store back into the destination buffer the sum of the two vectors.
 			}
+			for (; i < length; ++i) // Calculate the remaining length using scalar code.
+				dst[i + dstOffset] += src[i + srcOffset];
 		}
 
 		static void MulScalarBuffer(float scalar, float* buffer, size_t length, size_t offset)
 		{
-			const size_t iterations = length / SIMDPP_FAST_FLOAT32_SIZE;
-			for (size_t i = 0; i < iterations; ++i)
+			size_t i;
+			for (i = 0; i + SIMDPP_FAST_FLOAT32_SIZE <= length; i += SIMDPP_FAST_FLOAT32_SIZE)
 			{
-				simdpp::float32v xmmA = simdpp::load(&buffer[(i * SIMDPP_FAST_FLOAT32_SIZE) + offset]); // Load SIMDPP_FAST_FLOAT32_SIZE floats from the buffer into the vector.
-				simdpp::store(&buffer[(i * SIMDPP_FAST_FLOAT32_SIZE) + offset], scalar * xmmA); // Store each of the SIMDPP_FAST_FLOAT32_SIZE floats multiplied by the scalar back into the buffer.
+				simdpp::float32v xmmA = simdpp::load(&buffer[i + offset]); // Load SIMDPP_FAST_FLOAT32_SIZE floats from the buffer into the vector.
+				simdpp::store(&buffer[i + offset], xmmA * scalar); // Store each of the SIMDPP_FAST_FLOAT32_SIZE floats multiplied by the scalar back into the buffer.
 			}
+			for (; i < length; ++i) // Calculate the remaining length using scalar code.
+				buffer[i + offset] *= scalar;
 		}
 
 		static void MulScalarBufferStereo(float leftScalar, float rightScalar, float* buffer, size_t length, size_t leftOffset, size_t rightOffset)
 		{
-			const size_t iterations = length / SIMDPP_FAST_FLOAT32_SIZE;
-			for (size_t i = 0; i < iterations; ++i)
+			size_t i;
+			for (i = 0; i + SIMDPP_FAST_FLOAT32_SIZE <= length; i += SIMDPP_FAST_FLOAT32_SIZE)
 			{
-				simdpp::float32v xmmA = simdpp::load(&buffer[(i * SIMDPP_FAST_FLOAT32_SIZE) + leftOffset]); // Load SIMDPP_FAST_FLOAT32_SIZE floats from the buffers left channel into the vector.
-				simdpp::float32v xmmB = simdpp::load(&buffer[(i * SIMDPP_FAST_FLOAT32_SIZE) + rightOffset]); // Load SIMDPP_FAST_FLOAT32_SIZE floats from the buffers right channel into the vector.
-				simdpp::store(&buffer[(i * SIMDPP_FAST_FLOAT32_SIZE) + leftOffset], leftScalar * xmmA); // Store each of the SIMDPP_FAST_FLOAT32_SIZE floats multiplied by the left scalar for the left channel back into the buffer.
-				simdpp::store(&buffer[(i * SIMDPP_FAST_FLOAT32_SIZE) + rightOffset], rightScalar * xmmB); // Store each of the SIMDPP_FAST_FLOAT32_SIZE floats multiplied by the right scalar for the right channel back into the buffer.
+				simdpp::float32v xmmA = simdpp::load(&buffer[i + leftOffset]); // Load SIMDPP_FAST_FLOAT32_SIZE floats from the buffers left channel into the vector.
+				simdpp::float32v xmmB = simdpp::load(&buffer[i + rightOffset]); // Load SIMDPP_FAST_FLOAT32_SIZE floats from the buffers right channel into the vector.
+				simdpp::store(&buffer[i + leftOffset], xmmA * leftScalar); // Store each of the SIMDPP_FAST_FLOAT32_SIZE floats multiplied by the left scalar for the left channel back into the buffer.
+				simdpp::store(&buffer[i + rightOffset], xmmB * rightScalar); // Store each of the SIMDPP_FAST_FLOAT32_SIZE floats multiplied by the right scalar for the right channel back into the buffer.
+			}
+			for (; i < length; ++i) // Calculate the remaining length using scalar code.
+			{
+				buffer[i + leftOffset] *= leftScalar;
+				buffer[i + rightOffset] *= rightScalar;
 			}
 		}
 	};

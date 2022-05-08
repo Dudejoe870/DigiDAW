@@ -37,7 +37,6 @@ int main()
 				std::vector<unsigned int> { 0 },
 				std::vector<unsigned int> { 1 }
 			})); // Make a Bus that outputs to the first two channels of the output device.
-    /*
 	audioEngine->trackState.AddTrack(
         Core::Audio::TrackState::Track("Track 1",
             Core::Audio::TrackState::ChannelNumber::Stereo,
@@ -50,7 +49,7 @@ int main()
                     std::vector<unsigned int> { 1 }
 				})
 			})); // Make a Stereo Track that outputs both its channels to the L and R channels of the mainBus.
-    */
+    /*
     audioEngine->trackState.AddTrack(
         Core::Audio::TrackState::Track("Track 1",
             Core::Audio::TrackState::ChannelNumber::Mono,
@@ -62,6 +61,7 @@ int main()
                     std::vector<unsigned int> { 0, 1 }
                 })
             })); // Make a Mono Track that outputs both its channels to the L and R channels of the mainBus.
+    */
 
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);

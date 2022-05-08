@@ -68,7 +68,7 @@ namespace DigiDAW::Core::Audio
 			RtAudioStreamStatus status, 
 			void* userData);
 	public:
-		TrackState trackState;
+		TrackState trackState; // TrackState initializes before the Mixer.
 		Mixer mixer;
 
 		Engine(RtAudio::Api api);

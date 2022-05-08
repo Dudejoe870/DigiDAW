@@ -1,6 +1,5 @@
 #include "digidaw/ui/ui.h"
 
-#include "digidaw/ui/gui_util.h"
 #include "digidaw/ui/timer.h"
 
 #include <fmt/core.h>
@@ -34,6 +33,9 @@ namespace DigiDAW::UI
         fontHeader1 = io.Fonts->AddFontFromMemoryTTF(
             (void*)DigiDAW::UI::Resources::poppins_light_ttf,
             DigiDAW::UI::Resources::poppins_light_ttf_size, 35.0f, &fontConfig);
+        fontHeader2 = io.Fonts->AddFontFromMemoryTTF(
+            (void*)DigiDAW::UI::Resources::poppins_light_ttf,
+            DigiDAW::UI::Resources::poppins_light_ttf_size, 28.0f, &fontConfig);
 
         static const ImWchar iconRange[] = { 0xf000, 0xffff, 0 };
         iconFont = io.Fonts->AddFontFromMemoryTTF(
@@ -68,14 +70,8 @@ namespace DigiDAW::UI
         settingsFile.read(settingsStructure); // Read the ini structure.
 
         // Set the current style.
-        try
-        {
-            currentStyle = std::stoi(settingsStructure["UI"]["style"]);
-        }
-        catch (std::invalid_argument&)
-        {
+        if (!SettingsTryGetUInt("UI", "style", currentStyle))
             currentStyle = 0; // if it isn't an integer, reset it.
-        }
 
         // Verify the style to make sure it's within range of the styles list
         if (currentStyle >= styles.size())
@@ -83,22 +79,27 @@ namespace DigiDAW::UI
 
         currentGuiStyle = styles[currentStyle].guiStyle; // Set the current GUI skin to the one selected.
 
+        SettingsTryGetBool("UI", "audioMeter_segmented", audioMeterStyle.segmented);
+
+        SettingsTryGetInt("UI", "audioMeter_lineSegments", audioMeterStyle.lineSegments);
+        SettingsTryGetFloat("UI", "audioMeter_lineAlpha", audioMeterStyle.lineAlpha);
+
+        SettingsTryGetInt("UI", "audioMeter_stereoMeterSpacing", audioMeterStyle.stereoMeterSpacing);
+
+        SettingsTryGetColor("UI", "audioMeter_lowRangeColor", audioMeterStyle.lowRangeColor);
+        SettingsTryGetColor("UI", "audioMeter_midRangeColor", audioMeterStyle.midRangeColor);
+        SettingsTryGetColor("UI", "audioMeter_highRangeColor", audioMeterStyle.highRangeColor);
+
         // Set the current API.
-        RtAudio::Api settingsApi = RtAudio::Api::UNSPECIFIED;
-        try
-        {
-            settingsApi = (RtAudio::Api)std::stoi(settingsStructure["Audio"]["api"]);
-        }
-        catch (std::invalid_argument&)
-        { // Just go to the default if it isn't an integer.
-        }
+        unsigned int settingsApi = (unsigned int)RtAudio::Api::UNSPECIFIED;
+        SettingsTryGetUInt("Audio", "api", settingsApi);
 
         // Make sure that the API selected is supported and is within the enum range. Otherwise use the default.
         const std::vector<RtAudio::Api>& supportedApis = audioEngine->GetSupportedAPIs();
         if (settingsApi < RtAudio::Api::NUM_APIS &&
             std::find(supportedApis.begin(), supportedApis.end(), settingsApi) != supportedApis.end())
         {
-            audioEngine->ChangeBackend(settingsApi);
+            audioEngine->ChangeBackend((RtAudio::Api)settingsApi);
         }
 
         // Set the current input device.
@@ -121,26 +122,16 @@ namespace DigiDAW::UI
         const std::vector<unsigned int>& supportedSampleRates = audioEngine->GetSupportedSampleRates();
         unsigned int settingsSampleRate = (supportedSampleRates.size() > 0) ? supportedSampleRates[supportedSampleRates.size()-1] : -1;
         // Try to load the sample rate from the ini file.
-        try
-        {
-            settingsSampleRate = (unsigned int)std::stoi(settingsStructure["Audio"]["sampleRate"]);
-        }
-        catch (std::invalid_argument&)
-        { // If it can't convert it, then use the default.
-        }
+        SettingsTryGetUInt("Audio", "sampleRate", settingsSampleRate);
 
         // Make sure what we've picked is a supported sample rate, and if it is, set the current sample rate to it.
         if (std::find(supportedSampleRates.begin(), supportedSampleRates.end(), settingsSampleRate) != supportedSampleRates.end())
             audioEngine->SetCurrentSampleRate(settingsSampleRate);
 
         // Set the current buffer size.
-        try
-        {
-            audioEngine->SetCurrentBufferSize(std::stoi(settingsStructure["Audio"]["bufferSize"]));
-        }
-        catch (std::invalid_argument&)
-        { // Just use the Audio Engine default if it isn't an integer.
-        }
+        unsigned int bufferSize = 0;
+        if (SettingsTryGetUInt("Audio", "bufferSize", bufferSize))
+            audioEngine->SetCurrentBufferSize(bufferSize);
 
         SaveSettings(); // Save all the current settings to the ini file (just incase we had to reset anything due to errors)
     }
@@ -204,6 +195,29 @@ namespace DigiDAW::UI
 
         // UI
         settingsStructure["UI"]["style"] = fmt::format("{}", currentStyle);
+
+        settingsStructure["UI"]["audioMeter_segmented"] = fmt::format("{}", audioMeterStyle.segmented);
+
+        settingsStructure["UI"]["audioMeter_lineSegments"] = fmt::format("{}", audioMeterStyle.lineSegments);
+        settingsStructure["UI"]["audioMeter_lineAlpha"] = fmt::format("{}", audioMeterStyle.lineAlpha);
+
+        settingsStructure["UI"]["audioMeter_stereoMeterSpacing"] = fmt::format("{}", audioMeterStyle.stereoMeterSpacing);
+
+        settingsStructure["UI"]["audioMeter_lowRangeColor_R"] = fmt::format("{}", audioMeterStyle.lowRangeColor.x);
+        settingsStructure["UI"]["audioMeter_lowRangeColor_G"] = fmt::format("{}", audioMeterStyle.lowRangeColor.y);
+        settingsStructure["UI"]["audioMeter_lowRangeColor_B"] = fmt::format("{}", audioMeterStyle.lowRangeColor.z);
+
+        settingsStructure["UI"]["audioMeter_midRangeColor_R"] = fmt::format("{}", audioMeterStyle.midRangeColor.x);
+        settingsStructure["UI"]["audioMeter_midRangeColor_G"] = fmt::format("{}", audioMeterStyle.midRangeColor.y);
+        settingsStructure["UI"]["audioMeter_midRangeColor_B"] = fmt::format("{}", audioMeterStyle.midRangeColor.z);
+
+        settingsStructure["UI"]["audioMeter_highRangeColor_R"] = fmt::format("{}", audioMeterStyle.highRangeColor.x);
+        settingsStructure["UI"]["audioMeter_highRangeColor_G"] = fmt::format("{}", audioMeterStyle.highRangeColor.y);
+        settingsStructure["UI"]["audioMeter_highRangeColor_B"] = fmt::format("{}", audioMeterStyle.highRangeColor.z);
+
+        settingsStructure["UI"]["audioMeter_activeClipColor_R"] = fmt::format("{}", audioMeterStyle.activeClipColor.x);
+        settingsStructure["UI"]["audioMeter_activeClipColor_G"] = fmt::format("{}", audioMeterStyle.activeClipColor.y);
+        settingsStructure["UI"]["audioMeter_activeClipColor_B"] = fmt::format("{}", audioMeterStyle.activeClipColor.z);
 
         settingsFile.write(settingsStructure); // Write the settings to the ini file.
     }
@@ -387,6 +401,47 @@ namespace DigiDAW::UI
                             ImGui::EndCombo();
                         }
 
+                        ImGui::Separator();
+
+                        bool saveSettings = false;
+
+                        ImGui::PushFont(fontHeader2);
+                        Util::TextCentered("Audio Meter Settings");
+                        ImGui::PopFont();
+
+                        ImGui::Checkbox("Segmented", &audioMeterStyle.segmented);
+                        ImGui::BeginDisabled(!audioMeterStyle.segmented);
+                        saveSettings |= ImGui::SliderInt("Line Segments", &audioMeterStyle.lineSegments, 4, 128);
+                        saveSettings |= ImGui::SliderFloat("Line Opacity", &audioMeterStyle.lineAlpha, 0.0f, 1.0f);
+                        ImGui::EndDisabled();
+
+                        saveSettings |= ImGui::SliderInt("Stereo Meter Spacing", &audioMeterStyle.stereoMeterSpacing, 0, 6);
+
+                        Util::TextCentered("Colors");
+                        ImGui::Separator();
+                        
+                        saveSettings |= ImGui::ColorEdit3("Low Range Segment", &audioMeterStyle.lowRangeColor.x, ImGuiColorEditFlags_NoInputs);
+                        saveSettings |= ImGui::ColorEdit3("Mid Range Segment", &audioMeterStyle.midRangeColor.x, ImGuiColorEditFlags_NoInputs);
+                        saveSettings |= ImGui::ColorEdit3("High Range Segment", &audioMeterStyle.highRangeColor.x, ImGuiColorEditFlags_NoInputs);
+                        saveSettings |= ImGui::ColorEdit3("Clip Indicator", &audioMeterStyle.activeClipColor.x, ImGuiColorEditFlags_NoInputs);
+
+                        if (ImGui::Button("Reset To Defaults"))
+                        {
+                            audioMeterStyle = Util::AudioMeterStyle();
+                            saveSettings = true;
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::BeginTooltip();
+                            ImGui::TextUnformatted("Resets Audio Meter settings to default.");
+                            ImGui::EndTooltip();
+                        }
+
+                        Util::DrawAudioMeterStereo(1.0f, 0.5f, 1.0f, 0.7f, true, false, audioMeterStyle);
+
+                        if (saveSettings)
+                            SaveSettings();
+
                         ImGui::EndTabItem();
                     }
 
@@ -403,16 +458,21 @@ namespace DigiDAW::UI
         {
             if (ImGui::Begin(tracksWindowTitle.c_str(), &showTracksWindow))
             {
-                const std::vector<Core::Audio::Mixer::ChannelInfo>& outputChannels = audioEngine->mixer.GetOutputChannels();
+                const std::vector<Core::Audio::Mixer::ChannelInfo>& outputChannels = audioEngine->mixer.GetOutputInfo().channels;
                 if (outputChannels.size() > 0)
                 {
                     if (outputChannels.size() >= 2)
                         Util::DrawAudioMeterStereo(
                             Util::AmplitudeToDecibelPercentage(outputChannels[0].averageAmplitude), 
-                            Util::AmplitudeToDecibelPercentage(outputChannels[1].averageAmplitude));
+                            Util::AmplitudeToDecibelPercentage(outputChannels[1].averageAmplitude),
+                            Util::AmplitudeToDecibelPercentage(outputChannels[0].peakAmplitude),
+                            Util::AmplitudeToDecibelPercentage(outputChannels[1].peakAmplitude), 
+                            false, false, audioMeterStyle);
                     else
                         Util::DrawAudioMeter(
-                            Util::AmplitudeToDecibelPercentage(outputChannels[0].averageAmplitude));
+                            Util::AmplitudeToDecibelPercentage(outputChannels[0].averageAmplitude),
+                            Util::AmplitudeToDecibelPercentage(outputChannels[0].peakAmplitude), 
+                            false, audioMeterStyle);
                 }
             }
             ImGui::End();

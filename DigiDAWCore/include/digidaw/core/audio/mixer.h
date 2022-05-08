@@ -27,23 +27,31 @@ namespace DigiDAW::Core::Audio
 	class Mixer
 	{
 	public:
+		// TODO: LUFS metering
 		struct ChannelInfo
 		{
 			float averageAmplitude;
+			float peakAmplitude;
 
 			ChannelInfo()
 			{
 				this->averageAmplitude = 0.0f;
+				this->peakAmplitude = 0.0f;
 			}
 		};
 
 		struct MixableInfo
 		{
+		public:
 			std::vector<ChannelInfo> channels;
-
+		private:
+			std::vector<std::vector<float>> lookbackBuffers; // The lookback buffers that are used to calculate the amplitudes used for metering.
+		public:
 			MixableInfo()
 			{
 			}
+
+			friend class Mixer;
 		};
 	private:
 		bool doTestTone;
@@ -88,13 +96,16 @@ namespace DigiDAW::Core::Audio
 
 		std::unordered_map<const TrackState::Mixable*, MixableInfo> mixableInfo;
 
-		std::vector<ChannelInfo> outputChannels;
+		MixableInfo outputInfo;
+		unsigned int nOutChannels;
 
-		double streamDeltaTime = 0.0;
-		double streamLastTime = 0.0;
-		double updateCounter = 0.0;
+		bool running = true;
+		bool shouldAddToLookback = true;
+		std::thread mixerThread;
 
 		TrackBuffers GetTrackBuffers(const TrackState::Track& track, unsigned int nFrames, unsigned int nChannels);
+
+		void AddToLookback(float* src, std::vector<std::vector<float>>& dst, size_t length, unsigned int nChannels);
 
 		void ApplyGain(float gain, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);
 		void ApplyStereoPanning(float pan, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);
@@ -102,9 +113,10 @@ namespace DigiDAW::Core::Audio
 		void ProcessTrack(std::vector<float>& trackInputBuffer, const TrackState::Track& track, unsigned int nFrames, unsigned int sampleRate);
 		void ProcessBus(const TrackState::Bus& bus, unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate);
 	public:
-		double updateInterval = 0.03;
+		double meterUpdateInterval = 0.025;
 
 		Mixer(Engine& audioEngine);
+		~Mixer();
 
 		void UpdateAllTrackBuffers();
 		void UpdateAllBusBuffers();
@@ -126,9 +138,9 @@ namespace DigiDAW::Core::Audio
 			return mixableInfo[&mixable];
 		}
 
-		const std::vector<ChannelInfo>& GetOutputChannels()
+		const MixableInfo& GetOutputInfo()
 		{
-			return outputChannels;
+			return outputInfo;
 		}
 	};
 }

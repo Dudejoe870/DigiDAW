@@ -25,7 +25,7 @@ namespace DigiDAW::UI
     }
 
     void Util::DrawAudioMeter(
-        float avgFraction, float peakFraction, 
+        float rmsFraction, float peakFraction,
         bool clip, 
         const AudioMeterStyle& audioMeterStyle, const ImVec2& sizeArg)
     {
@@ -45,7 +45,7 @@ namespace DigiDAW::UI
         ImVec2 size = ImGui::CalcItemSize(sizeArg, 12.0f, 320.0f);
         ImRect bb(pos, pos + size);
         ImRect meterSize(bb);
-        bb.Min.y -= clipIndicatorHeight;
+        bb.Min.y -= clipIndicatorHeight; // Add clip indicator to overall bounding box
         ImGui::ItemSize(size, style.FramePadding.y);
         if (!ImGui::ItemAdd(bb, 0))
             return;
@@ -61,23 +61,31 @@ namespace DigiDAW::UI
             midRangeMaxFrac = std::roundf(maxMidRange / lineStepPercentage) * lineStepPercentage;
         }
 
+        float rounding = audioMeterStyle.rounded ? style.FrameRounding : 0.0f;
+
         // Draw frame
-        ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(ImGuiCol_Button), false, 0.0f);
+        ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(ImGuiCol_FrameBg), true, rounding);
+        bb.Expand(ImVec2(-style.FrameBorderSize, -style.FrameBorderSize));
+        meterSize.Expand(ImVec2(-style.FrameBorderSize, -style.FrameBorderSize));
 
         // TODO: LUFS meter
         // Draw RMS meter
-        avgFraction = ImSaturate(avgFraction);
-        DrawRectRangeV(window->DrawList, meterSize,
-            std::clamp(avgFraction, 0.0f, lowRangeMaxFrac), 
-            ImGui::ColorConvertFloat4ToU32(audioMeterStyle.lowRangeColor)); // Draw low range section
-        if (avgFraction > lowRangeMaxFrac)
+        rmsFraction = ImSaturate(rmsFraction);
+        if (rmsFraction > 0.0f)
+        {
             DrawRectRangeV(window->DrawList, meterSize,
-                std::clamp(avgFraction, lowRangeMaxFrac, midRangeMaxFrac), 
-                ImGui::ColorConvertFloat4ToU32(audioMeterStyle.midRangeColor), lowRangeMaxFrac); // Draw mid range section
-        if (avgFraction > midRangeMaxFrac)
-            DrawRectRangeV(window->DrawList, meterSize,
-                std::clamp(avgFraction, midRangeMaxFrac, 1.0f), 
-                ImGui::ColorConvertFloat4ToU32(audioMeterStyle.highRangeColor), midRangeMaxFrac); // Draw high range section
+                std::clamp(rmsFraction, 0.0f, lowRangeMaxFrac),
+                ImGui::ColorConvertFloat4ToU32(audioMeterStyle.lowRangeColor), 0.0f, 
+                    rounding, ImDrawFlags_RoundCornersBottom); // Draw low range section
+            if (rmsFraction > lowRangeMaxFrac)
+                DrawRectRangeV(window->DrawList, meterSize,
+                    std::clamp(rmsFraction, lowRangeMaxFrac, midRangeMaxFrac),
+                    ImGui::ColorConvertFloat4ToU32(audioMeterStyle.midRangeColor), lowRangeMaxFrac, 0.0f); // Draw mid range section
+            if (rmsFraction > midRangeMaxFrac)
+                DrawRectRangeV(window->DrawList, meterSize,
+                    std::clamp(rmsFraction, midRangeMaxFrac, 1.0f),
+                    ImGui::ColorConvertFloat4ToU32(audioMeterStyle.highRangeColor), midRangeMaxFrac, 0.0f); // Draw high range section
+        }
         
         // Draw dividing lines
         if (audioMeterStyle.segmented)
@@ -109,22 +117,23 @@ namespace DigiDAW::UI
         ImU32 clipIndicatorColor = clip ? 
             ImGui::ColorConvertFloat4ToU32(audioMeterStyle.activeClipColor) : 
             ImGui::ColorConvertFloat4ToU32(ImVec4(0.0f, 0.0f, 0.0f, deactiveClipAlpha));
-        window->DrawList->AddRectFilled(ImVec2(bb.Min.x, bb.Min.y), ImVec2(bb.Max.x, meterSize.Min.y), clipIndicatorColor);
+        window->DrawList->AddRectFilled(ImVec2(bb.Min.x, bb.Min.y), ImVec2(bb.Max.x, meterSize.Min.y), clipIndicatorColor, 
+            rounding, ImDrawFlags_RoundCornersTop);
     }
 
     void Util::DrawAudioMeterStereo(
-        float leftAvgFraction, float rightAvgFraction, 
+        float leftRmsFraction, float rightRmsFraction,
         float leftPeakFraction, float rightPeakFraction, 
         bool leftClip, bool rightClip, 
         const AudioMeterStyle& audioMeterStyle, const ImVec2& sizeArg)
     {
         DrawAudioMeter(
-            leftAvgFraction, leftPeakFraction, 
+            leftRmsFraction, leftPeakFraction,
             leftClip, 
             audioMeterStyle, sizeArg);
         ImGui::SameLine(0.0f, audioMeterStyle.stereoMeterSpacing);
         DrawAudioMeter(
-            rightAvgFraction, rightPeakFraction, 
+            rightRmsFraction, rightPeakFraction,
             rightClip, 
             audioMeterStyle, sizeArg);
     }

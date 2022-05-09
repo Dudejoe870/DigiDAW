@@ -45,8 +45,8 @@ namespace DigiDAW::UI
         ImGui::StyleColorsDark(&darkStyle);
         ImGui::StyleColorsLight(&lightStyle);
 
-        ModifyStyle(darkStyle);
-        ModifyStyle(lightStyle);
+        ModifyStyle(darkStyle, false);
+        ModifyStyle(lightStyle, true);
 
         styles = 
         {
@@ -76,6 +76,7 @@ namespace DigiDAW::UI
         currentGuiStyle = styles[currentStyle].guiStyle; // Set the current GUI skin to the one selected.
 
         SettingsTryGetBool("UI", "audioMeter_segmented", audioMeterStyle.segmented);
+        SettingsTryGetBool("UI", "audioMeter_rounded", audioMeterStyle.rounded);
 
         SettingsTryGetInt("UI", "audioMeter_lineSegments", audioMeterStyle.lineSegments);
         SettingsTryGetFloat("UI", "audioMeter_lineAlpha", audioMeterStyle.lineAlpha);
@@ -143,7 +144,7 @@ namespace DigiDAW::UI
         return -1;
     }
 
-    void UI::ModifyStyle(ImGuiStyle& style)
+    void UI::ModifyStyle(ImGuiStyle& style, bool withBorder)
     {
         // Get rid of all transparency that can look weird when dragging a secondary window out of the main one.
         style.WindowRounding = 0.0f;
@@ -159,13 +160,18 @@ namespace DigiDAW::UI
             style.Colors[i].z = grayscale;
         }
 
-        // No Frame border, and a little frame rounding.
-        style.FrameRounding = 3.0f;
-        style.FrameBorderSize = 0.0f;
+        style.Colors[ImGuiCol_Border] = ImVec4(0.0f, 0.0f, 0.0f, 0.5f);
 
-        // A little tab rounding and no border.
-        style.TabRounding = 0.4f;
+        style.FrameRounding = 3.0f;
+        style.FrameBorderSize = (withBorder) ? 1.0f : 0.0f;
+        style.FramePadding = ImVec2(7.0f, 2.0f);
+
+        style.ItemSpacing = ImVec2(6.0f, 3.0f);
+
+        style.TabRounding = 8.0f;
         style.TabBorderSize = 0.0f;
+
+        style.GrabRounding = 8.0f;
 
         // Align the Window title to the center, add window border, and no window collapse arrow.
         // (double-click to collapse still works without the no collapse flag active per window)
@@ -193,6 +199,7 @@ namespace DigiDAW::UI
         SettingsSave("UI", "style", currentStyle);
 
         SettingsSave("UI", "audioMeter_segmented", audioMeterStyle.segmented);
+        SettingsSave("UI", "audioMeter_rounded", audioMeterStyle.rounded);
 
         SettingsSave("UI", "audioMeter_lineSegments", audioMeterStyle.lineSegments);
         SettingsSave("UI", "audioMeter_lineAlpha", audioMeterStyle.lineAlpha);
@@ -201,7 +208,7 @@ namespace DigiDAW::UI
 
         SettingsSave("UI", "audioMeter_lowRangeColor", audioMeterStyle.lowRangeColor);
         SettingsSave("UI", "audioMeter_midRangeColor", audioMeterStyle.midRangeColor);
-        SettingsSave("UI", "audioMeter_highRangeColor", audioMeterStyle.midRangeColor);
+        SettingsSave("UI", "audioMeter_highRangeColor", audioMeterStyle.highRangeColor);
 
         SettingsSave("UI", "audioMeter_activeClipColor", audioMeterStyle.activeClipColor);
 
@@ -395,13 +402,16 @@ namespace DigiDAW::UI
                         Util::TextCentered("Audio Meter Settings");
                         ImGui::PopFont();
 
-                        ImGui::Checkbox("Segmented", &audioMeterStyle.segmented);
+                        saveSettings |= ImGui::Checkbox("Segmented", &audioMeterStyle.segmented);
+                        ImGui::SameLine();
+                        saveSettings |= ImGui::Checkbox("Rounded", &audioMeterStyle.rounded);
+
                         ImGui::BeginDisabled(!audioMeterStyle.segmented);
                         saveSettings |= ImGui::SliderInt("Line Segments", &audioMeterStyle.lineSegments, 4, 128);
                         saveSettings |= ImGui::SliderFloat("Line Opacity", &audioMeterStyle.lineAlpha, 0.0f, 1.0f);
                         ImGui::EndDisabled();
 
-                        saveSettings |= ImGui::SliderInt("Stereo Meter Spacing", &audioMeterStyle.stereoMeterSpacing, 0, 6);
+                        saveSettings |= ImGui::SliderInt("Stereo Meter Spacing", &audioMeterStyle.stereoMeterSpacing, 1, 6);
 
                         Util::TextCentered("Colors");
                         ImGui::Separator();
@@ -449,15 +459,15 @@ namespace DigiDAW::UI
                 {
                     if (outputChannels.size() >= 2)
                         Util::DrawAudioMeterStereo(
-                            Util::AmplitudeToDecibelPercentage(outputChannels[0].averageAmplitude), 
-                            Util::AmplitudeToDecibelPercentage(outputChannels[1].averageAmplitude),
-                            Util::AmplitudeToDecibelPercentage(outputChannels[0].peakAmplitude),
-                            Util::AmplitudeToDecibelPercentage(outputChannels[1].peakAmplitude), 
+                            Util::DecibelToPercentage(outputChannels[0].rmsAmplitude), 
+                            Util::DecibelToPercentage(outputChannels[1].rmsAmplitude),
+                            Util::DecibelToPercentage(outputChannels[0].peakAmplitude),
+                            Util::DecibelToPercentage(outputChannels[1].peakAmplitude),
                             false, false, audioMeterStyle);
                     else
                         Util::DrawAudioMeter(
-                            Util::AmplitudeToDecibelPercentage(outputChannels[0].averageAmplitude),
-                            Util::AmplitudeToDecibelPercentage(outputChannels[0].peakAmplitude), 
+                            Util::DecibelToPercentage(outputChannels[0].rmsAmplitude),
+                            Util::DecibelToPercentage(outputChannels[0].peakAmplitude),
                             false, audioMeterStyle);
                 }
             }

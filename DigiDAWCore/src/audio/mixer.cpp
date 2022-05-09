@@ -41,7 +41,7 @@ namespace DigiDAW::Core::Audio
 				const std::vector<TrackState::Track>& tracks = audioEngine.trackState.GetAllTracks();
 				const std::vector<TrackState::Bus>& buses = audioEngine.trackState.GetAllBuses();
 
-				std::vector<float> avgBuffer;
+				std::vector<float> rmsBuffer;
 				std::vector<float> peakBuffer;
 
 				while (running)
@@ -53,15 +53,15 @@ namespace DigiDAW::Core::Audio
 						{
 							if (!mixableInfo[&bus].lookbackBuffers.empty())
 							{
-								Detail::SimdHelper::GetBufferAverageAndPeakMultiChannel(
+								Detail::SimdHelper::GetBufferRMSAndPeakMultiChannel(
 									mixableInfo[&bus].lookbackBuffers,
 									mixableInfo[&bus].lookbackBuffers[0].size(),
-									avgBuffer,
+									rmsBuffer,
 									peakBuffer);
 								mixableInfo[&bus].channels.resize((size_t)bus.nChannels);
 								for (unsigned int channel = 0; channel < (unsigned int)bus.nChannels; ++channel)
 								{
-									mixableInfo[&bus].channels[channel].averageAmplitude = avgBuffer[channel];
+									mixableInfo[&bus].channels[channel].rmsAmplitude = rmsBuffer[channel];
 									mixableInfo[&bus].channels[channel].peakAmplitude = peakBuffer[channel];
 								}
 
@@ -75,15 +75,15 @@ namespace DigiDAW::Core::Audio
 						{
 							if (!mixableInfo[&track].lookbackBuffers.empty())
 							{
-								Detail::SimdHelper::GetBufferAverageAndPeakMultiChannel(
+								Detail::SimdHelper::GetBufferRMSAndPeakMultiChannel(
 									mixableInfo[&track].lookbackBuffers,
 									mixableInfo[&track].lookbackBuffers[0].size(),
-									avgBuffer,
+									rmsBuffer,
 									peakBuffer);
 								mixableInfo[&track].channels.resize((size_t)track.nChannels);
 								for (unsigned int channel = 0; channel < (unsigned int)track.nChannels; ++channel)
 								{
-									mixableInfo[&track].channels[channel].averageAmplitude = avgBuffer[channel];
+									mixableInfo[&track].channels[channel].rmsAmplitude = rmsBuffer[channel];
 									mixableInfo[&track].channels[channel].peakAmplitude = peakBuffer[channel];
 								}
 
@@ -95,15 +95,15 @@ namespace DigiDAW::Core::Audio
 
 						if (!outputInfo.lookbackBuffers.empty())
 						{
-							Detail::SimdHelper::GetBufferAverageAndPeakMultiChannel(
+							Detail::SimdHelper::GetBufferRMSAndPeakMultiChannel(
 								outputInfo.lookbackBuffers,
 								outputInfo.lookbackBuffers[0].size(),
-								avgBuffer,
+								rmsBuffer,
 								peakBuffer);
 							outputInfo.channels.resize(nOutChannels);
 							for (unsigned int channel = 0; channel < nOutChannels; ++channel)
 							{
-								outputInfo.channels[channel].averageAmplitude = avgBuffer[channel];
+								outputInfo.channels[channel].rmsAmplitude = rmsBuffer[channel];
 								outputInfo.channels[channel].peakAmplitude = peakBuffer[channel];
 							}
 
@@ -115,7 +115,7 @@ namespace DigiDAW::Core::Audio
 						shouldAddToLookback = true;
 					}
 
-					std::this_thread::sleep_for(std::chrono::nanoseconds((unsigned long long)(meterUpdateInterval * 1000000000.0)));
+					std::this_thread::sleep_for(std::chrono::milliseconds(meterUpdateIntervalMS));
 				}
 			});
 	}

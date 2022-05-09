@@ -27,15 +27,15 @@ namespace DigiDAW::Core::Audio
 	class Mixer
 	{
 	public:
-		// TODO: LUFS metering
+		// TODO: LUFS metering (could be based off this https://github.com/klangfreund/LUFSMeter)
 		struct ChannelInfo
 		{
-			float averageAmplitude;
+			float rmsAmplitude;
 			float peakAmplitude;
 
 			ChannelInfo()
 			{
-				this->averageAmplitude = 0.0f;
+				this->rmsAmplitude = 0.0f;
 				this->peakAmplitude = 0.0f;
 			}
 		};
@@ -113,7 +113,7 @@ namespace DigiDAW::Core::Audio
 		void ProcessTrack(std::vector<float>& trackInputBuffer, const TrackState::Track& track, unsigned int nFrames, unsigned int sampleRate);
 		void ProcessBus(const TrackState::Bus& bus, unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate);
 	public:
-		double meterUpdateInterval = 0.025;
+		unsigned int meterUpdateIntervalMS = 25;
 
 		Mixer(Engine& audioEngine);
 		~Mixer();

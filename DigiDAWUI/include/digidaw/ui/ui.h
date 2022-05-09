@@ -143,7 +143,7 @@ namespace DigiDAW::UI
 
 		unsigned int GetDeviceByName(std::string name);
 
-		void ModifyStyle(ImGuiStyle& style);
+		void ModifyStyle(ImGuiStyle& style, bool withBorder);
 		void SaveSettings();
 
 		void RenderTracksWindow();

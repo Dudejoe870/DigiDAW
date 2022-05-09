@@ -52,21 +52,28 @@ namespace DigiDAW::Core::Detail
 			return LnVector(src) * rcpLn10; // ln(src) / ln(10)
 		}
 	public:
-		static void GetBufferAverageAndPeakMultiChannel(const std::vector<std::vector<float>>& src, size_t length, std::vector<float>& avgOut, std::vector<float>& peakOut)
+		static void GetBufferRMSAndPeakMultiChannel(const std::vector<std::vector<float>>& src, size_t length, std::vector<float>& rmsOut, std::vector<float>& peakOut)
 		{
-			avgOut.resize(src.size());
+			const float minimumDecibel = -300.0f;
+			simdpp::float32v min = simdpp::splat(minimumDecibel);
+
+			rmsOut.resize(src.size());
 			peakOut.resize(src.size());
 
 			for (unsigned int channel = 0; channel < src.size(); ++channel)
 			{
-				float peak = 0.0f;
-				avgOut[channel] = 0.0f;
+				float peak = minimumDecibel;
+				rmsOut[channel] = 0.0f;
 
 				size_t i;
 				for (i = 0; i + SIMDPP_FAST_FLOAT32_SIZE <= length; i += SIMDPP_FAST_FLOAT32_SIZE)
 				{
 					simdpp::float32v xmmA = simdpp::load(&src[channel][i]);
-					avgOut[channel] += simdpp::reduce_add(xmmA);
+					xmmA = xmmA * xmmA; // Mean square
+					xmmA = -0.691f + 10.0f * Log10Vector(xmmA); // Taken from LUFSMeter 
+					// (I don't know if the added constant is apart of RMS, but LUFS is more accurate anyway so it shouldn't matter)
+					xmmA = simdpp::blend(xmmA, min, xmmA > min);
+					rmsOut[channel] += simdpp::reduce_add(xmmA);
 
 					simdpp::float32v xmmB = simdpp::splat(peak);
 					simdpp::float32v xmmC = simdpp::blend(xmmA, xmmB, xmmA > xmmB);
@@ -75,14 +82,16 @@ namespace DigiDAW::Core::Detail
 				for (; i < length; ++i) // Calculate the remaining length using scalar code.
 				{
 					float a = src[channel][i];
-					avgOut[channel] += a;
+					a *= a;
+					a = std::max(-0.691f + 10.0f * std::log10(a), minimumDecibel);
+					rmsOut[channel] += a;
 
 					peak = std::max(peak, a);
 				}
 
 				peakOut[channel] = peak;
 			}
-			for (float& avg : avgOut)
+			for (float& avg : rmsOut)
 				avg /= length;
 		}
 

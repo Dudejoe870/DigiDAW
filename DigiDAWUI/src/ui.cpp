@@ -1,13 +1,9 @@
 #include "digidaw/ui/ui.h"
-
 #include "digidaw/ui/timer.h"
-
-#include <fmt/core.h>
 
 #include "res/resources.h"
 
 #include "imgui-knobs.h"
-
 #include "imgui_internal.h"
 
 namespace DigiDAW::UI
@@ -181,43 +177,33 @@ namespace DigiDAW::UI
     void UI::SaveSettings()
     {
         // Audio
-        settingsStructure["Audio"]["bufferSize"] = fmt::format("{}", audioEngine->GetCurrentBufferSize());
-        settingsStructure["Audio"]["api"] = fmt::format("{}", (int)audioEngine->GetCurrentAPI());
-        settingsStructure["Audio"]["sampleRate"] = fmt::format("{}", audioEngine->GetCurrentSampleRate());
+        SettingsSave("Audio", "bufferSize", audioEngine->GetCurrentBufferSize());
+        SettingsSave("Audio", "api", (int)audioEngine->GetCurrentAPI());
+        SettingsSave("Audio", "sampleRate", audioEngine->GetCurrentSampleRate());
 
         const std::vector<Core::Audio::Engine::AudioDevice>& devices = audioEngine->GetDevices();
         unsigned int currentInputDevice = audioEngine->GetCurrentInputDevice();
         unsigned int currentOutputDevice = audioEngine->GetCurrentOutputDevice();
-        settingsStructure["Audio"]["inputDevice"] = 
-            (currentInputDevice != -1 && currentInputDevice < devices.size()) ? devices[currentInputDevice].info.name : "None";
-        settingsStructure["Audio"]["outputDevice"] =
-            (currentOutputDevice != -1 && currentOutputDevice < devices.size()) ? devices[currentOutputDevice].info.name : "None";
+        SettingsSave("Audio", "inputDevice",
+            (currentInputDevice != -1 && currentInputDevice < devices.size()) ? devices[currentInputDevice].info.name : "None");
+        SettingsSave("Audio", "outputDevice",
+            (currentOutputDevice != -1 && currentOutputDevice < devices.size()) ? devices[currentOutputDevice].info.name : "None");
 
         // UI
-        settingsStructure["UI"]["style"] = fmt::format("{}", currentStyle);
+        SettingsSave("UI", "style", currentStyle);
 
-        settingsStructure["UI"]["audioMeter_segmented"] = fmt::format("{}", audioMeterStyle.segmented);
+        SettingsSave("UI", "audioMeter_segmented", audioMeterStyle.segmented);
 
-        settingsStructure["UI"]["audioMeter_lineSegments"] = fmt::format("{}", audioMeterStyle.lineSegments);
-        settingsStructure["UI"]["audioMeter_lineAlpha"] = fmt::format("{}", audioMeterStyle.lineAlpha);
+        SettingsSave("UI", "audioMeter_lineSegments", audioMeterStyle.lineSegments);
+        SettingsSave("UI", "audioMeter_lineAlpha", audioMeterStyle.lineAlpha);
 
-        settingsStructure["UI"]["audioMeter_stereoMeterSpacing"] = fmt::format("{}", audioMeterStyle.stereoMeterSpacing);
+        SettingsSave("UI", "audioMeter_stereoMeterSpacing", audioMeterStyle.stereoMeterSpacing);
 
-        settingsStructure["UI"]["audioMeter_lowRangeColor_R"] = fmt::format("{}", audioMeterStyle.lowRangeColor.x);
-        settingsStructure["UI"]["audioMeter_lowRangeColor_G"] = fmt::format("{}", audioMeterStyle.lowRangeColor.y);
-        settingsStructure["UI"]["audioMeter_lowRangeColor_B"] = fmt::format("{}", audioMeterStyle.lowRangeColor.z);
+        SettingsSave("UI", "audioMeter_lowRangeColor", audioMeterStyle.lowRangeColor);
+        SettingsSave("UI", "audioMeter_midRangeColor", audioMeterStyle.midRangeColor);
+        SettingsSave("UI", "audioMeter_highRangeColor", audioMeterStyle.midRangeColor);
 
-        settingsStructure["UI"]["audioMeter_midRangeColor_R"] = fmt::format("{}", audioMeterStyle.midRangeColor.x);
-        settingsStructure["UI"]["audioMeter_midRangeColor_G"] = fmt::format("{}", audioMeterStyle.midRangeColor.y);
-        settingsStructure["UI"]["audioMeter_midRangeColor_B"] = fmt::format("{}", audioMeterStyle.midRangeColor.z);
-
-        settingsStructure["UI"]["audioMeter_highRangeColor_R"] = fmt::format("{}", audioMeterStyle.highRangeColor.x);
-        settingsStructure["UI"]["audioMeter_highRangeColor_G"] = fmt::format("{}", audioMeterStyle.highRangeColor.y);
-        settingsStructure["UI"]["audioMeter_highRangeColor_B"] = fmt::format("{}", audioMeterStyle.highRangeColor.z);
-
-        settingsStructure["UI"]["audioMeter_activeClipColor_R"] = fmt::format("{}", audioMeterStyle.activeClipColor.x);
-        settingsStructure["UI"]["audioMeter_activeClipColor_G"] = fmt::format("{}", audioMeterStyle.activeClipColor.y);
-        settingsStructure["UI"]["audioMeter_activeClipColor_B"] = fmt::format("{}", audioMeterStyle.activeClipColor.z);
+        SettingsSave("UI", "audioMeter_activeClipColor", audioMeterStyle.activeClipColor);
 
         settingsFile.write(settingsStructure); // Write the settings to the ini file.
     }

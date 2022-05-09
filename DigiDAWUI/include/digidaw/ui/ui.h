@@ -1,6 +1,7 @@
 #pragma once
 
 #include "imgui.h"
+#include "ImGuiFileBrowser.h"
 
 #include "mini/ini.h"
 
@@ -10,6 +11,8 @@
 
 #include <memory>
 #include <string>
+
+#include <fmt/core.h>
 
 namespace DigiDAW::UI
 {
@@ -57,6 +60,8 @@ namespace DigiDAW::UI
 
 		mINI::INIFile settingsFile;
 		mINI::INIStructure settingsStructure;
+
+		imgui_addons::ImGuiFileBrowser fileBrowser;
 
 		bool SettingsTryGetFloat(const std::string& section, const std::string& name, float& out)
 		{
@@ -118,6 +123,20 @@ namespace DigiDAW::UI
 			ret |= SettingsTryGetFloat(section, name + "_G", out.y);
 			ret |= SettingsTryGetFloat(section, name + "_B", out.z);
 			return ret;
+		}
+
+		template <typename T>
+		void SettingsSave(const std::string& section, const std::string& name, const T& in)
+		{
+			settingsStructure[section][name] = fmt::format("{}", in);
+		}
+
+		template <>
+		void SettingsSave<ImVec4>(const std::string& section, const std::string& name, const ImVec4& in)
+		{
+			SettingsSave(section, name + "_R", in.x);
+			SettingsSave(section, name + "_G", in.y);
+			SettingsSave(section, name + "_B", in.z);
 		}
 
 		void SetupStateFromSettings();

@@ -15,13 +15,14 @@
 
 #include "digidaw/ui/ui.h"
 #include "digidaw/ui/timer.h"
+
 #include "res/resources.h"
 
 using namespace DigiDAW;
 
 static void glfw_error_callback(int error, const char* description)
 {
-    fprintf(stderr, "Glfw Error %d: %s\n", error, description);
+    std::cerr << "Glfw Error" << error << ": " << description << std::endl;
 }
 
 int main()

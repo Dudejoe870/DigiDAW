@@ -1,5 +1,4 @@
 #include "digidaw/core/audio/mixer.h"
-
 #include "digidaw/core/audio/engine.h"
 
 #include "detail/simdhelper.h"
@@ -44,8 +43,15 @@ namespace DigiDAW::Core::Audio
 				std::vector<float> rmsBuffer;
 				std::vector<float> peakBuffer;
 
+				auto currentTime = std::chrono::high_resolution_clock::now();
+				auto lastTime = currentTime;
+
 				while (running)
 				{
+					currentTime = std::chrono::high_resolution_clock::now();
+					unsigned long long deltaTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+						std::chrono::duration<double>(currentTime - lastTime)).count();
+
 					if (!tracks.empty() || !buses.empty())
 					{
 						shouldAddToLookback = false;
@@ -63,11 +69,11 @@ namespace DigiDAW::Core::Audio
 								for (unsigned int channel = 0; channel < (unsigned int)bus.nChannels; ++channel)
 								{
 									LerpMeter(mixableInfo[&bus].channels[channel].rms, rmsBuffer[channel],
-										(float)meterUpdateIntervalMS,
+										(float)deltaTime,
 										(float)meterRMSRiseTimeMS, (float)meterRMSFallTimeMS,
 										minimumDecibelLevel);
 									LerpMeter(mixableInfo[&bus].channels[channel].peak, peakBuffer[channel],
-										(float)meterUpdateIntervalMS,
+										(float)deltaTime,
 										(float)meterPeakRiseTimeMS, (float)meterPeakFallTimeMS,
 										minimumDecibelLevel);
 								}
@@ -88,11 +94,11 @@ namespace DigiDAW::Core::Audio
 								for (unsigned int channel = 0; channel < (unsigned int)track.nChannels; ++channel)
 								{
 									LerpMeter(mixableInfo[&track].channels[channel].rms, rmsBuffer[channel],
-										(float)meterUpdateIntervalMS,
+										(float)deltaTime,
 										(float)meterRMSRiseTimeMS, (float)meterRMSFallTimeMS,
 										minimumDecibelLevel);
 									LerpMeter(mixableInfo[&track].channels[channel].peak, peakBuffer[channel],
-										(float)meterUpdateIntervalMS,
+										(float)deltaTime,
 										(float)meterPeakRiseTimeMS, (float)meterPeakFallTimeMS,
 										minimumDecibelLevel);
 								}
@@ -111,11 +117,11 @@ namespace DigiDAW::Core::Audio
 							for (unsigned int channel = 0; channel < outputInfo.channels.size(); ++channel)
 							{
 								LerpMeter(outputInfo.channels[channel].rms, rmsBuffer[channel], 
-									(float)meterUpdateIntervalMS, 
+									(float)deltaTime,
 									(float)meterRMSRiseTimeMS, (float)meterRMSFallTimeMS, 
 									minimumDecibelLevel);
 								LerpMeter(outputInfo.channels[channel].peak, peakBuffer[channel],
-									(float)meterUpdateIntervalMS,
+									(float)deltaTime,
 									(float)meterPeakRiseTimeMS, (float)meterPeakFallTimeMS,
 									minimumDecibelLevel);
 							}
@@ -124,7 +130,8 @@ namespace DigiDAW::Core::Audio
 						shouldAddToLookback = true;
 					}
 
-					std::this_thread::sleep_for(std::chrono::milliseconds(meterUpdateIntervalMS));
+					lastTime = currentTime;
+					std::this_thread::sleep_for(std::chrono::milliseconds(meterUpdateIntervalMS)); // Doesn't need to be accurate
 				}
 			});
 	}
@@ -253,7 +260,7 @@ namespace DigiDAW::Core::Audio
 					std::vector<float>& busOutputBuffer = busBuffers[&busOutput.bus.get()].buffer;
 
 					// busOutputBuffer[outChannel] += channelOutputBuffer[inChannel]
-					Detail::SimdHelper::AddBuffer(
+					Detail::SimdHelper::AccumulateBuffer(
 						channelOutputBuffer.data(),
 						busOutputBuffer.data(), 
 						inChannel * nFrames, outChannel * nFrames,
@@ -302,6 +309,23 @@ namespace DigiDAW::Core::Audio
 			size_t offset = buffer.size();
 			if (buffer.size() + nFrames >= amountOfSamples)
 			{
+				// TODO: OPTIMIZE THIS PLEASE
+				// This is really not very optimal
+				// currently I'm not going to concern myself
+				// with the performance implications of this
+				// but if performance is bad, this is probably one 
+				// of the first places I'd look, as this is called 
+				// every single audio frame, and we're basically using a 
+				// vector as a circular buffer. And while it'd be nice to 
+				// use a more optimal data structure like an actual circular 
+				// buffer, in this case the size can actually change, 
+				// and we need the memory to be contiguous.
+				// One idea is instead of using the erase function,
+				// we could write a SIMD vector shift function to shift 
+				// everything over by nFrames, making room for the new data.
+				// However there could still be a more optimal way.
+				// (remember we need to get the peaks and averages)
+
 				buffer.resize(amountOfSamples);
 				offset -= nFrames;
 				buffer.erase(buffer.begin(), buffer.begin() + nFrames);
@@ -360,7 +384,7 @@ namespace DigiDAW::Core::Audio
 						// TODO: Mono Bus Panning
 
 						// outputBuffer[outChannel] += busBuffers[bus].buffer[channel]
-						Detail::SimdHelper::AddBuffer(
+						Detail::SimdHelper::AccumulateBuffer(
 							busBuffers[&bus].buffer.data(), 
 							outputBuffer, 
 							channel * nFrames, outChannel * nFrames, 
@@ -371,7 +395,7 @@ namespace DigiDAW::Core::Audio
 		}
 		else
 		{
-			std::vector<float> monoOutput(nFrames);
+			std::vector<float> testToneBuffer(nFrames);
 			for (unsigned int frame = 0; frame < nFrames; ++frame)
 			{
 				double sampleTime = (time + ((double)frame / (double)sampleRate)) - testToneStartTime;
@@ -379,11 +403,11 @@ namespace DigiDAW::Core::Audio
 					((std::clamp(1.0 - sampleTime, 0.0, 1.0)) * // Fade Out
 					(std::clamp(sampleTime, 0.0, 1.0))) * // Fade In
 					((std::cosf(2 * pi * 440.0 * sampleTime) * 0.5f) + 0.5f));
-				monoOutput[frame] = amplitude;
+				testToneBuffer[frame] = amplitude;
 			}
 
 			for (unsigned int channel = 0; channel < nOutChannels; ++channel)
-				std::memcpy(&outputBuffer[channel * nFrames], monoOutput.data(), sizeof(float) * monoOutput.size());
+				Detail::SimdHelper::CopyBuffer(testToneBuffer.data(), outputBuffer, 0, channel * nFrames, testToneBuffer.size());
 		}
 
 		AddToLookback(outputBuffer, outputInfo.lookbackBuffers, nFrames, nOutChannels, sampleRate);

@@ -127,7 +127,7 @@ namespace DigiDAW::Core::Audio
 		void ProcessBus(const TrackState::Bus& bus, unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate);
 	public:
 		unsigned int meterUpdateIntervalMS = 16;
-		unsigned int lookbackBufferIntervalMS = 100;
+		unsigned int lookbackBufferIntervalMS = 100; // The amount of time the meter uses to average over
 
 		unsigned int meterRMSRiseTimeMS = 36; // The time it takes to go from minimum to maximum dB
 		unsigned int meterRMSFallTimeMS = 500; // The time it takes to go from maximum to minimum dB

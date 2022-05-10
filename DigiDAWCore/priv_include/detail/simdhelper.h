@@ -117,7 +117,7 @@ namespace DigiDAW::Core::Detail
 				dst[i + dstOffset] = src[i + srcOffset];
 		}
 
-		static void AddBuffer(float* src, float* dst, size_t srcOffset, size_t dstOffset, size_t length)
+		static void AccumulateBuffer(float* src, float* dst, size_t srcOffset, size_t dstOffset, size_t length)
 		{
 			size_t i;
 			for (i = 0; i + SIMDPP_FAST_FLOAT32_SIZE <= length; i += SIMDPP_FAST_FLOAT32_SIZE)

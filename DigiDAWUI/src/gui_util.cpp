@@ -27,7 +27,7 @@ namespace DigiDAW::UI
     void Util::DrawAudioMeter(
         float rmsFraction, float peakFraction,
         bool clip, 
-        const AudioMeterStyle& audioMeterStyle, const ImVec2& sizeArg)
+        const AudioMeterStyle& audioMeterStyle)
     {
         const float clipIndicatorHeight = 6.0f;
         const float maxLowRange = 0.5f;
@@ -42,7 +42,7 @@ namespace DigiDAW::UI
         const ImGuiStyle& style = g.Style;
 
         ImVec2 pos = window->DC.CursorPos + ImVec2(0, clipIndicatorHeight);
-        ImVec2 size = ImGui::CalcItemSize(sizeArg, 12.0f, 320.0f);
+        ImVec2 size = ImVec2(audioMeterStyle.meterWidth, 320.0f);
         ImRect bb(pos, pos + size);
         ImRect meterSize(bb);
         bb.Min.y -= clipIndicatorHeight; // Add clip indicator to overall bounding box
@@ -125,16 +125,16 @@ namespace DigiDAW::UI
         float leftRmsFraction, float rightRmsFraction,
         float leftPeakFraction, float rightPeakFraction, 
         bool leftClip, bool rightClip, 
-        const AudioMeterStyle& audioMeterStyle, const ImVec2& sizeArg)
+        const AudioMeterStyle& audioMeterStyle)
     {
         DrawAudioMeter(
             leftRmsFraction, leftPeakFraction,
             leftClip, 
-            audioMeterStyle, sizeArg);
+            audioMeterStyle);
         ImGui::SameLine(0.0f, audioMeterStyle.stereoMeterSpacing);
         DrawAudioMeter(
             rightRmsFraction, rightPeakFraction,
             rightClip, 
-            audioMeterStyle, sizeArg);
+            audioMeterStyle);
     }
 }

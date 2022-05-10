@@ -59,15 +59,18 @@ namespace DigiDAW::Core::Audio
 									rmsBuffer,
 									peakBuffer);
 								mixableInfo[&bus].channels.resize((size_t)bus.nChannels);
+
 								for (unsigned int channel = 0; channel < (unsigned int)bus.nChannels; ++channel)
 								{
-									mixableInfo[&bus].channels[channel].rmsAmplitude = rmsBuffer[channel];
-									mixableInfo[&bus].channels[channel].peakAmplitude = peakBuffer[channel];
+									LerpMeter(mixableInfo[&bus].channels[channel].rms, rmsBuffer[channel],
+										(float)meterUpdateIntervalMS,
+										(float)meterRMSRiseTimeMS, (float)meterRMSFallTimeMS,
+										minimumDecibelLevel);
+									LerpMeter(mixableInfo[&bus].channels[channel].peak, peakBuffer[channel],
+										(float)meterUpdateIntervalMS,
+										(float)meterPeakRiseTimeMS, (float)meterPeakFallTimeMS,
+										minimumDecibelLevel);
 								}
-
-								// Clear lookback buffers
-								for (std::vector<float>& buffer : mixableInfo[&bus].lookbackBuffers)
-									buffer.clear();
 							}
 						}
 
@@ -81,15 +84,18 @@ namespace DigiDAW::Core::Audio
 									rmsBuffer,
 									peakBuffer);
 								mixableInfo[&track].channels.resize((size_t)track.nChannels);
+
 								for (unsigned int channel = 0; channel < (unsigned int)track.nChannels; ++channel)
 								{
-									mixableInfo[&track].channels[channel].rmsAmplitude = rmsBuffer[channel];
-									mixableInfo[&track].channels[channel].peakAmplitude = peakBuffer[channel];
+									LerpMeter(mixableInfo[&track].channels[channel].rms, rmsBuffer[channel],
+										(float)meterUpdateIntervalMS,
+										(float)meterRMSRiseTimeMS, (float)meterRMSFallTimeMS,
+										minimumDecibelLevel);
+									LerpMeter(mixableInfo[&track].channels[channel].peak, peakBuffer[channel],
+										(float)meterUpdateIntervalMS,
+										(float)meterPeakRiseTimeMS, (float)meterPeakFallTimeMS,
+										minimumDecibelLevel);
 								}
-
-								// Clear lookback buffers
-								for (std::vector<float>& buffer : mixableInfo[&track].lookbackBuffers)
-									buffer.clear();
 							}
 						}
 
@@ -101,17 +107,20 @@ namespace DigiDAW::Core::Audio
 								rmsBuffer,
 								peakBuffer);
 							outputInfo.channels.resize(nOutChannels);
-							for (unsigned int channel = 0; channel < nOutChannels; ++channel)
+
+							for (unsigned int channel = 0; channel < outputInfo.channels.size(); ++channel)
 							{
-								outputInfo.channels[channel].rmsAmplitude = rmsBuffer[channel];
-								outputInfo.channels[channel].peakAmplitude = peakBuffer[channel];
+								LerpMeter(outputInfo.channels[channel].rms, rmsBuffer[channel], 
+									(float)meterUpdateIntervalMS, 
+									(float)meterRMSRiseTimeMS, (float)meterRMSFallTimeMS, 
+									minimumDecibelLevel);
+								LerpMeter(outputInfo.channels[channel].peak, peakBuffer[channel],
+									(float)meterUpdateIntervalMS,
+									(float)meterPeakRiseTimeMS, (float)meterPeakFallTimeMS,
+									minimumDecibelLevel);
 							}
-
-							// Clear lookback buffers
-							for (std::vector<float>& buffer : outputInfo.lookbackBuffers)
-								buffer.clear();
 						}
-
+						
 						shouldAddToLookback = true;
 					}
 
@@ -166,19 +175,14 @@ namespace DigiDAW::Core::Audio
 		return TrackBuffers(MixBuffer(audioEngine.GetCurrentBufferSize(), (unsigned int)track.nChannels), busOutputBuffers);
 	}
 
-	void Mixer::UpdateCurrentTime(double time)
-	{
-		this->currentTime = time;
-	}
-
-	void Mixer::ApplyGain(float gain, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames)
+	inline void Mixer::ApplyGain(float gain, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames)
 	{
 		// Perhaps use a lookup table for realtime mixing? (can calculate in realtime for extra accuracy when exporting)
 		float amplitudeFactor = std::powf(10.0f, gain / 20.0f);
 		Detail::SimdHelper::MulScalarBuffer(amplitudeFactor, buffer.data(), nChannels * nFrames, 0); // buffer = amplitudeFactor * buffer
 	}
 
-	void Mixer::ApplyStereoPanning(float pan, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames)
+	inline void Mixer::ApplyStereoPanning(float pan, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames)
 	{
 		if (nChannels != 2) return;
 
@@ -193,7 +197,7 @@ namespace DigiDAW::Core::Audio
 		Detail::SimdHelper::MulScalarBufferStereo(leftAmplitude, rightAmplitude, buffer.data(), nFrames, 0, nFrames);
 	}
 
-	void Mixer::ProcessTrack(std::vector<float>& trackInputBuffer, const TrackState::Track& track, unsigned int nFrames, unsigned int sampleRate)
+	inline void Mixer::ProcessTrack(std::vector<float>& trackInputBuffer, const TrackState::Track& track, unsigned int nFrames, unsigned int sampleRate)
 	{
 		if (track.outputs.empty()) return;
 
@@ -216,7 +220,7 @@ namespace DigiDAW::Core::Audio
 
 		// Add final output to the lookback buffer
 		std::vector<std::vector<float>>& lookbackBuffers = mixableInfo[&track].lookbackBuffers;
-		AddToLookback(trackBuffer.data(), lookbackBuffers, nFrames, (unsigned int)track.nChannels);
+		AddToLookback(trackBuffer.data(), lookbackBuffers, nFrames, (unsigned int)track.nChannels, sampleRate);
 
 		// Send out to buses by looping through all the bus outputs 
 		// each channel of this track has a mapping to the input channels of each bus it sends out to
@@ -261,7 +265,7 @@ namespace DigiDAW::Core::Audio
 		}
 	}
 
-	void Mixer::ProcessBus(const TrackState::Bus& bus, unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate)
+	inline void Mixer::ProcessBus(const TrackState::Bus& bus, unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate)
 	{
 		if (bus.busChannelToDeviceOutputChannels.empty()) return;
 
@@ -281,7 +285,30 @@ namespace DigiDAW::Core::Audio
 
 		// Add final output to the lookback buffer
 		std::vector<std::vector<float>>& lookbackBuffers = mixableInfo[&bus].lookbackBuffers;
-		AddToLookback(busBuffer.data(), lookbackBuffers, nFrames, (unsigned int)bus.nChannels);
+		AddToLookback(busBuffer.data(), lookbackBuffers, nFrames, (unsigned int)bus.nChannels, sampleRate);
+	}
+
+	inline void Mixer::AddToLookback(float* src, std::vector<std::vector<float>>& dst, unsigned nFrames, unsigned int nChannels, unsigned int sampleRate)
+	{
+		if (!shouldAddToLookback) return;
+
+		size_t amountOfSamples = (size_t)(((float)lookbackBufferIntervalMS / 1000.0f) * (float)sampleRate);
+
+		dst.resize(nChannels);
+		for (unsigned int channel = 0; channel < nChannels; ++channel)
+		{
+			std::vector<float>& buffer = dst[channel];
+			buffer.reserve(amountOfSamples);
+			size_t offset = buffer.size();
+			if (buffer.size() + nFrames >= amountOfSamples)
+			{
+				buffer.resize(amountOfSamples);
+				offset -= nFrames;
+				buffer.erase(buffer.begin(), buffer.begin() + nFrames);
+			} else buffer.resize(buffer.size() + nFrames);
+
+			Detail::SimdHelper::CopyBuffer(src, buffer.data(), channel * nFrames, offset, nFrames);
+		}
 	}
 
 	void Mixer::Mix(
@@ -348,7 +375,10 @@ namespace DigiDAW::Core::Audio
 			for (unsigned int frame = 0; frame < nFrames; ++frame)
 			{
 				double sampleTime = (time + ((double)frame / (double)sampleRate)) - testToneStartTime;
-				float amplitude = (float)((0.10 * (std::clamp(1.0 - sampleTime, 0.0, 1.0))) * ((std::sinf(2 * pi * 440.0 * sampleTime) * 0.5f) + 0.5f));
+				float amplitude = (float)(0.50 * 
+					((std::clamp(1.0 - sampleTime, 0.0, 1.0)) * // Fade Out
+					(std::clamp(sampleTime, 0.0, 1.0))) * // Fade In
+					((std::cosf(2 * pi * 440.0 * sampleTime) * 0.5f) + 0.5f));
 				monoOutput[frame] = amplitude;
 			}
 
@@ -356,21 +386,7 @@ namespace DigiDAW::Core::Audio
 				std::memcpy(&outputBuffer[channel * nFrames], monoOutput.data(), sizeof(float) * monoOutput.size());
 		}
 
-		AddToLookback(outputBuffer, outputInfo.lookbackBuffers, nFrames, nOutChannels);
-	}
-
-	void Mixer::AddToLookback(float* src, std::vector<std::vector<float>>& dst, size_t length, unsigned int nChannels)
-	{
-		if (!shouldAddToLookback) return;
-		
-		dst.resize(nChannels);
-		for (unsigned int channel = 0; channel < nChannels; ++channel)
-		{
-			std::vector<float>& buffer = dst[channel];
-			size_t offset = buffer.size();
-			buffer.resize(buffer.size() + length);
-			Detail::SimdHelper::CopyBuffer(src, buffer.data(), channel * length, offset, length);
-		}
+		AddToLookback(outputBuffer, outputInfo.lookbackBuffers, nFrames, nOutChannels, sampleRate);
 	}
 
 	void Mixer::StartTestTone()

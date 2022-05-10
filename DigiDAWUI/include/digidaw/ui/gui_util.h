@@ -21,6 +21,8 @@ namespace DigiDAW::UI::Util
         // Clip Indicator
         ImVec4 activeClipColor = ImVec4(0.9f, 0.3f, 0.3f, 1.0f);
 
+        int meterWidth = 12;
+
         bool segmented = true;
         bool rounded = true;
 
@@ -48,12 +50,10 @@ namespace DigiDAW::UI::Util
     void DrawAudioMeter(
         float rmsFraction, float peakFraction,
         bool clip = false, 
-        const AudioMeterStyle& audioMeterStyle = AudioMeterStyle(),
-        const ImVec2& sizeArg = ImVec2(0, 0));
+        const AudioMeterStyle& audioMeterStyle = AudioMeterStyle());
     void DrawAudioMeterStereo(
         float leftRmsFraction, float rightRmsFraction,
         float leftPeakFraction, float rightPeakFraction, 
         bool leftClip = false, bool rightClip = false, 
-        const AudioMeterStyle& audioMeterStyle = AudioMeterStyle(),
-        const ImVec2& sizeArg = ImVec2(0, 0));
+        const AudioMeterStyle& audioMeterStyle = AudioMeterStyle());
 }

@@ -81,6 +81,8 @@ namespace DigiDAW::UI
         SettingsTryGetInt("UI", "audioMeter_lineSegments", audioMeterStyle.lineSegments);
         SettingsTryGetFloat("UI", "audioMeter_lineAlpha", audioMeterStyle.lineAlpha);
 
+        SettingsTryGetInt("UI", "audioMeter_meterWidth", audioMeterStyle.meterWidth);
+
         SettingsTryGetInt("UI", "audioMeter_stereoMeterSpacing", audioMeterStyle.stereoMeterSpacing);
 
         SettingsTryGetColor("UI", "audioMeter_lowRangeColor", audioMeterStyle.lowRangeColor);
@@ -203,6 +205,8 @@ namespace DigiDAW::UI
 
         SettingsSave("UI", "audioMeter_lineSegments", audioMeterStyle.lineSegments);
         SettingsSave("UI", "audioMeter_lineAlpha", audioMeterStyle.lineAlpha);
+
+        SettingsSave("UI", "audioMeter_meterWidth", audioMeterStyle.meterWidth);
 
         SettingsSave("UI", "audioMeter_stereoMeterSpacing", audioMeterStyle.stereoMeterSpacing);
 
@@ -413,6 +417,8 @@ namespace DigiDAW::UI
 
                         saveSettings |= ImGui::SliderInt("Stereo Meter Spacing", &audioMeterStyle.stereoMeterSpacing, 1, 6);
 
+                        saveSettings |= ImGui::SliderInt("Meter Width", &audioMeterStyle.meterWidth, 10, 16);
+
                         Util::TextCentered("Colors");
                         ImGui::Separator();
                         
@@ -459,15 +465,15 @@ namespace DigiDAW::UI
                 {
                     if (outputChannels.size() >= 2)
                         Util::DrawAudioMeterStereo(
-                            Util::DecibelToPercentage(outputChannels[0].rmsAmplitude), 
-                            Util::DecibelToPercentage(outputChannels[1].rmsAmplitude),
-                            Util::DecibelToPercentage(outputChannels[0].peakAmplitude),
-                            Util::DecibelToPercentage(outputChannels[1].peakAmplitude),
+                            Util::DecibelToPercentage(outputChannels[0].rms, audioEngine->mixer.minimumDecibelLevel), 
+                            Util::DecibelToPercentage(outputChannels[1].rms, audioEngine->mixer.minimumDecibelLevel),
+                            Util::DecibelToPercentage(outputChannels[0].peak, audioEngine->mixer.minimumDecibelLevel),
+                            Util::DecibelToPercentage(outputChannels[1].peak, audioEngine->mixer.minimumDecibelLevel),
                             false, false, audioMeterStyle);
                     else
                         Util::DrawAudioMeter(
-                            Util::DecibelToPercentage(outputChannels[0].rmsAmplitude),
-                            Util::DecibelToPercentage(outputChannels[0].peakAmplitude),
+                            Util::DecibelToPercentage(outputChannels[0].rms, audioEngine->mixer.minimumDecibelLevel),
+                            Util::DecibelToPercentage(outputChannels[0].peak, audioEngine->mixer.minimumDecibelLevel),
                             false, audioMeterStyle);
                 }
             }

@@ -70,8 +70,7 @@ namespace DigiDAW::Core::Detail
 				{
 					simdpp::float32v xmmA = simdpp::load(&src[channel][i]);
 					xmmA = xmmA * xmmA; // Mean square
-					xmmA = -0.691f + 10.0f * Log10Vector(xmmA); // Taken from LUFSMeter 
-					// (I don't know if the added constant is apart of RMS, but LUFS is more accurate anyway so it shouldn't matter)
+					xmmA = 10.0f * Log10Vector(xmmA);
 					xmmA = simdpp::blend(xmmA, min, xmmA > min);
 					rmsOut[channel] += simdpp::reduce_add(xmmA);
 
@@ -83,7 +82,7 @@ namespace DigiDAW::Core::Detail
 				{
 					float a = src[channel][i];
 					a *= a;
-					a = std::max(-0.691f + 10.0f * std::log10(a), minimumDecibel);
+					a = std::max(10.0f * std::log10(a), minimumDecibel);
 					rmsOut[channel] += a;
 
 					peak = std::max(peak, a);

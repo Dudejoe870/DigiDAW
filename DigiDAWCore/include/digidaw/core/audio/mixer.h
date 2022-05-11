@@ -74,29 +74,40 @@ namespace DigiDAW::Core::Audio
 
 			MixBuffer(unsigned int nFrames, unsigned int nChannels)
 			{
-				buffer.resize(nChannels * nFrames);
+				this->buffer = std::vector<float>(nChannels * nFrames);
 			}
 		};
 		
-		struct TrackBuffers
+		struct TrackInfo
 		{
 			MixBuffer mainTrackBuffer;
 			std::vector<std::vector<MixBuffer>> busOutputBuffers;
-			
-			TrackBuffers()
+			std::future<void> processAsync;
+
+			TrackInfo()
 			{
 			}
 
-			TrackBuffers(MixBuffer mainTrackBuffer, std::vector<std::vector<MixBuffer>>& busOutputBuffers)
+			TrackInfo(Engine& audioEngine, const TrackState::Track& track, unsigned int nFrames);
+		};
+
+		struct BusInfo
+		{
+			MixBuffer mainBusBuffer;
+
+			BusInfo()
 			{
-				this->mainTrackBuffer = mainTrackBuffer;
-				this->busOutputBuffers = busOutputBuffers;
+
+			}
+
+			BusInfo(const TrackState::Bus& bus, unsigned int nFrames)
+			{
+				this->mainBusBuffer = MixBuffer(nFrames, (unsigned int)bus.nChannels);
 			}
 		};
 
-		std::unordered_map<const TrackState::Track*, TrackBuffers> trackBuffers;
-		std::unordered_map<const TrackState::Bus*, MixBuffer> busBuffers;
-
+		std::unordered_map<const TrackState::Track*, TrackInfo> trackInfo;
+		std::unordered_map<const TrackState::Bus*, BusInfo> busInfo;
 		std::unordered_map<const TrackState::Mixable*, MixableInfo> mixableInfo;
 
 		MixableInfo outputInfo;
@@ -104,9 +115,7 @@ namespace DigiDAW::Core::Audio
 
 		bool running = true;
 		bool shouldAddToLookback = true;
-		std::thread mixerThread;
-
-		TrackBuffers GetTrackBuffers(const TrackState::Track& track, unsigned int nFrames, unsigned int nChannels);
+		std::jthread mixerThread;
 
 		void LerpMeter(float& value, const float& target, float deltaTime, float riseTime, float fallTime, float minimumValue)
 		{

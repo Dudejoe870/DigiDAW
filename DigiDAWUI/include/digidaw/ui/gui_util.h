@@ -6,20 +6,22 @@
 #include <cmath>
 #include <algorithm>
 
+#include <fmt/core.h>
+
 namespace DigiDAW::UI::Util
 {
     struct AudioMeterStyle
     {
         // Meter Range Colors
-        ImVec4 lowRangeColor = ImVec4(0.4f, 0.75f, 0.4f, 1.0f);
-        ImVec4 midRangeColor = ImVec4(0.75f, 0.8f, 0.1f, 1.0f);
-        ImVec4 highRangeColor = ImVec4(0.8f, 0.5f, 0.1f, 1.0f);
+        ImVec4 lowRangeColor = ImVec4(0.5f, 1.0f, 0.5f, 1.0f);
+        ImVec4 midRangeColor = ImVec4(0.9f, 1.0f, 0.1f, 1.0f);
+        ImVec4 highRangeColor = ImVec4(1.0f, 0.6f, 0.1f, 1.0f);
 
         // Dividing Line
         float lineAlpha = 0.132f;
 
         // Clip Indicator
-        ImVec4 activeClipColor = ImVec4(0.9f, 0.3f, 0.3f, 1.0f);
+        ImVec4 activeClipColor = ImVec4(1.0f, 0.3f, 0.3f, 1.0f);
 
         int meterWidth = 12;
 
@@ -44,12 +46,46 @@ namespace DigiDAW::UI::Util
         drawList->AddRectFilled(p0, p1, color, rounding, drawFlags);
     }
 
-    void TextCentered(const char* text);
-    void TextRightAlign(const char* text, float padding = 0.0f);
+    inline void Center(float width = 0.0f)
+    {
+        float windowWidth = ImGui::GetWindowSize().x;
 
-    void DrawAudioMeter(
+        ImGui::SetCursorPosX((windowWidth - width) * 0.5f);
+    }
+
+    inline void TextCentered(const char* text)
+    {
+        float textWidth = ImGui::CalcTextSize(text).x;
+
+        Center(textWidth);
+        ImGui::TextUnformatted(text);
+    }
+
+    inline void TextRightAlign(const char* text, float padding = 0.0f)
+    {
+        float windowWidth = ImGui::GetWindowSize().x;
+        float textWidth = ImGui::CalcTextSize(text).x;
+
+        ImGui::SetCursorPosX((windowWidth - textWidth) - padding);
+        ImGui::TextUnformatted(text);
+    }
+
+    inline float GetMeterLabelWidth(float minimumDecibel = -60.0f)
+    {
+        return ImGui::CalcTextSize(fmt::format("{}dB", minimumDecibel).c_str()).x;
+    }
+
+    const float audioMeterClipIndicatorHeight = 6.0f;
+    const float audioMeterHeight = 270.0f;
+    const float audioMeterFullHeight = audioMeterHeight + audioMeterClipIndicatorHeight;
+    void DrawMeterLabels(float minimumDecibel = -60.0f);
+    void DrawAudioMeterEx(
         float rmsFraction, float peakFraction,
         bool clip = false, 
+        const AudioMeterStyle& audioMeterStyle = AudioMeterStyle());
+    void DrawAudioMeter(
+        float rmsFraction, float peakFraction,
+        bool clip = false,
         const AudioMeterStyle& audioMeterStyle = AudioMeterStyle());
     void DrawAudioMeterStereo(
         float leftRmsFraction, float rightRmsFraction,

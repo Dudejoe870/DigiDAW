@@ -38,11 +38,11 @@ namespace DigiDAW::Core::Audio
 			float gain;
 			float pan;
 
-			std::string name;
+			char name[256];
 
 			Mixable()
 			{
-				this->name = "";
+				std::memset(this->name, 0, sizeof(this->name));
 
 				this->nChannels = ChannelNumber::Mono;
 				this->gain = 0.0f;
@@ -51,7 +51,9 @@ namespace DigiDAW::Core::Audio
 
 			Mixable(std::string name, ChannelNumber nChannels, float gain, float pan)
 			{
-				this->name = name;
+				std::memset(this->name, 0, sizeof(this->name));
+				if (name.size() < 255 /* 255 as the end of the name needs to be a zero */) 
+					std::memcpy(this->name, name.c_str(), name.size());
 
 				this->nChannels = nChannels;
 				this->gain = gain;

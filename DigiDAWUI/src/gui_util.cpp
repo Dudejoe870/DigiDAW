@@ -3,33 +3,41 @@
 
 #include "digidaw/ui/gui_util.h"
 
+#include <fmt/core.h>
+
 namespace DigiDAW::UI
 {
-    // From https://stackoverflow.com/a/67855985
-    void Util::TextCentered(const char* text)
+    void Util::DrawMeterLabels(float minimumDecibel)
     {
-        float windowWidth = ImGui::GetWindowSize().x;
-        float textWidth = ImGui::CalcTextSize(text).x;
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems)
+            return;
 
-        ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-        ImGui::TextUnformatted(text);
+        ImGuiContext& g = *GImGui;
+        const ImGuiStyle& style = g.Style;
+
+        ImVec2 pos = window->DC.CursorPos;
+        ImVec2 size = ImVec2(GetMeterLabelWidth(minimumDecibel), audioMeterHeight);
+        ImRect bb(pos, pos + size);
+        ImGui::ItemSize(size);
+        if (!ImGui::ItemAdd(bb, 0))
+            return;
+
+        for (float i = minimumDecibel + 5; i <= 0; i += 5)
+        {
+            float percentage = DecibelToPercentage(i, minimumDecibel);
+            float y = audioMeterHeight * percentage;
+            window->DrawList->AddText(ImVec2(bb.Min.x, bb.Max.y - y), 
+                ImGui::GetColorU32(ImGuiCol_Text), 
+                fmt::format("{}dB", i).c_str());
+        }
     }
 
-    void Util::TextRightAlign(const char* text, float padding)
-    {
-        float windowWidth = ImGui::GetWindowSize().x;
-        float textWidth = ImGui::CalcTextSize(text).x;
-
-        ImGui::SetCursorPosX((windowWidth - textWidth) - padding);
-        ImGui::TextUnformatted(text);
-    }
-
-    void Util::DrawAudioMeter(
+    void Util::DrawAudioMeterEx(
         float rmsFraction, float peakFraction,
         bool clip, 
         const AudioMeterStyle& audioMeterStyle)
     {
-        const float clipIndicatorHeight = 6.0f;
         const float maxLowRange = 0.5f;
         const float maxMidRange = 0.7f;
         const float deactiveClipAlpha = 0.2f;
@@ -41,11 +49,11 @@ namespace DigiDAW::UI
         ImGuiContext& g = *GImGui;
         const ImGuiStyle& style = g.Style;
 
-        ImVec2 pos = window->DC.CursorPos + ImVec2(0, clipIndicatorHeight);
-        ImVec2 size = ImVec2(audioMeterStyle.meterWidth, 320.0f);
+        ImVec2 pos = window->DC.CursorPos + ImVec2(0, audioMeterClipIndicatorHeight);
+        ImVec2 size = ImVec2(audioMeterStyle.meterWidth, audioMeterHeight);
         ImRect bb(pos, pos + size);
         ImRect meterSize(bb);
-        bb.Min.y -= clipIndicatorHeight; // Add clip indicator to overall bounding box
+        bb.Min.y -= audioMeterClipIndicatorHeight; // Add clip indicator to overall bounding box
         ImGui::ItemSize(size, style.FramePadding.y);
         if (!ImGui::ItemAdd(bb, 0))
             return;
@@ -121,20 +129,35 @@ namespace DigiDAW::UI
             rounding, ImDrawFlags_RoundCornersTop);
     }
 
+    void Util::DrawAudioMeter(
+        float rmsFraction, float peakFraction,
+        bool clip,
+        const AudioMeterStyle& audioMeterStyle)
+    {
+        DrawAudioMeterEx(
+            rmsFraction, peakFraction,
+            clip,
+            audioMeterStyle);
+        ImGui::SameLine(0.0f, 3.0f);
+        DrawMeterLabels();
+    }
+
     void Util::DrawAudioMeterStereo(
         float leftRmsFraction, float rightRmsFraction,
         float leftPeakFraction, float rightPeakFraction, 
         bool leftClip, bool rightClip, 
         const AudioMeterStyle& audioMeterStyle)
     {
-        DrawAudioMeter(
+        DrawAudioMeterEx(
             leftRmsFraction, leftPeakFraction,
             leftClip, 
             audioMeterStyle);
         ImGui::SameLine(0.0f, audioMeterStyle.stereoMeterSpacing);
-        DrawAudioMeter(
+        DrawAudioMeterEx(
             rightRmsFraction, rightPeakFraction,
             rightClip, 
             audioMeterStyle);
+        ImGui::SameLine(0.0f, 3.0f);
+        DrawMeterLabels();
     }
 }

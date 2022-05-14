@@ -1,10 +1,12 @@
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui_internal.h"
+
 #include "digidaw/ui/ui.h"
 #include "digidaw/ui/timer.h"
 
 #include "res/resources.h"
 
 #include "imgui-knobs.h"
-#include "imgui_internal.h"
 
 namespace DigiDAW::UI
 {
@@ -41,17 +43,58 @@ namespace DigiDAW::UI
 
         // Setup Styles
         ImGuiStyle darkStyle;
-        ImGuiStyle lightStyle;
+        ImGuiStyle lowContrastLightStyle;
+        ImGuiStyle highContrastLightStyle;
         ImGui::StyleColorsDark(&darkStyle);
-        ImGui::StyleColorsLight(&lightStyle);
+        ImGui::StyleColorsLight(&lowContrastLightStyle);
+        ImGui::StyleColorsLight(&highContrastLightStyle);
 
         ModifyStyle(darkStyle, false);
-        ModifyStyle(lightStyle, true);
+        ModifyStyle(highContrastLightStyle, true);
+
+        // Make the Low Contrast theme
+        lowContrastLightStyle.Colors[ImGuiCol_WindowBg] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
+
+        lowContrastLightStyle.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+        lowContrastLightStyle.Colors[ImGuiCol_PopupBg] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
+
+        lowContrastLightStyle.Colors[ImGuiCol_FrameBg] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+        lowContrastLightStyle.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
+        lowContrastLightStyle.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.65f, 0.65f, 0.65f, 1.0f);
+
+        lowContrastLightStyle.Colors[ImGuiCol_Header] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+        lowContrastLightStyle.Colors[ImGuiCol_HeaderActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
+        lowContrastLightStyle.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.65f, 0.65f, 0.65f, 1.0f);
+
+        lowContrastLightStyle.Colors[ImGuiCol_ChildBg] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
+
+        lowContrastLightStyle.Colors[ImGuiCol_SliderGrab] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
+        lowContrastLightStyle.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
+
+        lowContrastLightStyle.Colors[ImGuiCol_CheckMark] = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
+
+        lowContrastLightStyle.Colors[ImGuiCol_TitleBg] = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+        lowContrastLightStyle.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
+
+        lowContrastLightStyle.Colors[ImGuiCol_Button] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+        lowContrastLightStyle.Colors[ImGuiCol_ButtonActive] = ImVec4(0.55f, 0.55f, 0.55f, 1.0f);
+        lowContrastLightStyle.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.65f, 0.65f, 0.65f, 1.0f);
+
+        lowContrastLightStyle.Colors[ImGuiCol_Tab] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
+        lowContrastLightStyle.Colors[ImGuiCol_TabActive] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+        lowContrastLightStyle.Colors[ImGuiCol_TabHovered] = ImVec4(0.65f, 0.65f, 0.65f, 1.0f);
+        lowContrastLightStyle.Colors[ImGuiCol_TabUnfocused] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
+        lowContrastLightStyle.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+
+        lowContrastLightStyle.Colors[ImGuiCol_Text] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+
+        ModifyStyle(lowContrastLightStyle, false);
 
         styles = 
         {
             Style("Dark", darkStyle),
-            Style("Light", lightStyle)
+            Style("Low Contrast Light", lowContrastLightStyle),
+            Style("High Contrast Light", highContrastLightStyle)
         };
 
         // Load state from settings.ini
@@ -61,7 +104,7 @@ namespace DigiDAW::UI
         audioEngine->StartEngine();
     }
 
-    void UI::SetupStateFromSettings()
+    inline void UI::SetupStateFromSettings()
     {
         settingsFile.read(settingsStructure); // Read the ini structure.
 
@@ -146,7 +189,7 @@ namespace DigiDAW::UI
         return -1;
     }
 
-    void UI::ModifyStyle(ImGuiStyle& style, bool withBorder)
+    inline void UI::ModifyStyle(ImGuiStyle& style, bool withBorder)
     {
         // Get rid of all transparency that can look weird when dragging a secondary window out of the main one.
         style.WindowRounding = 0.0f;
@@ -161,6 +204,9 @@ namespace DigiDAW::UI
             style.Colors[i].y = grayscale;
             style.Colors[i].z = grayscale;
         }
+
+        const ImVec4 windowBg = style.Colors[ImGuiCol_WindowBg];
+        style.Colors[ImGuiCol_ChildBg] = ImVec4(windowBg.x * 1.25f, windowBg.y * 1.25f, windowBg.z * 1.25f, 1.0f);
 
         style.Colors[ImGuiCol_Border] = ImVec4(0.0f, 0.0f, 0.0f, 0.5f);
 
@@ -227,7 +273,7 @@ namespace DigiDAW::UI
         RenderDockspace();
 
         // For Development purposes...
-        //ImGui::ShowDemoWindow();
+        ImGui::ShowDemoWindow();
         // ...
         
         RenderTracksWindow();
@@ -237,12 +283,12 @@ namespace DigiDAW::UI
         RenderSettingsWindow();
 	}
 
-    void UI::RenderSettingsWindow()
+    inline void UI::RenderSettingsWindow()
     {
         if (showSettingsWindow)
         {
-            ImGui::SetNextWindowSize(ImVec2(1024.0f, 768.0f), ImGuiCond_Appearing);
-            ImGui::SetNextWindowSizeConstraints(ImVec2(915.0f, 138.0f), ImVec2(10000000.0f, 10000000.0f));
+            ImGui::SetNextWindowSize(ImVec2(1024.0f, 780.0f), ImGuiCond_Appearing);
+            ImGui::SetNextWindowSizeConstraints(ImVec2(915.0f, 780.0f), ImVec2(10000000.0f, 10000000.0f));
             ImGui::Begin(settingsWindowTitle.c_str(), &showSettingsWindow,
                 ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse);
             {
@@ -355,13 +401,13 @@ namespace DigiDAW::UI
                         unsigned int currentBufferSize = audioEngine->GetCurrentBufferSize();
                         float currentLatencyMS = ((float)currentBufferSize / (float)currentSampleRate) * 1000.0f;
                         if (ImGui::BeginCombo("Buffer Size", 
-                            fmt::format("{} Samples ({:.2}ms)", currentBufferSize, currentLatencyMS).c_str()))
+                            fmt::format("{} Samples ({:.2f}ms)", currentBufferSize, currentLatencyMS).c_str()))
                         {
                             for (unsigned int bufferSize = 32; bufferSize <= 4096; bufferSize *= 2)
                             {
                                 float latencyMS = ((float)bufferSize / (float)currentSampleRate) * 1000.0f;
                                 if (ImGui::Selectable(
-                                    fmt::format("{} Samples ({:.2}ms)", bufferSize, latencyMS).c_str(), currentBufferSize == bufferSize))
+                                    fmt::format("{} Samples ({:.2f}ms)", bufferSize, latencyMS).c_str(), currentBufferSize == bufferSize))
                                 {
                                     audioEngine->SetCurrentBufferSize(bufferSize);
                                     SaveSettings();
@@ -440,6 +486,8 @@ namespace DigiDAW::UI
                         }
 
                         Util::DrawAudioMeterStereo(1.0f, 0.5f, 1.0f, 0.7f, true, false, audioMeterStyle);
+                        ImGui::SameLine();
+                        Util::DrawAudioMeter(0.7f, 0.8f, true, audioMeterStyle);
 
                         if (saveSettings)
                             SaveSettings();
@@ -454,18 +502,96 @@ namespace DigiDAW::UI
         }
     }
 
-    void UI::RenderTracksWindow()
+    inline void UI::RenderTrackChannelStrip(const std::string& name, Core::Audio::TrackState::Track& track)
+    {
+        if (ImGui::BeginChild(std::string("##" + name).c_str(), ImVec2(225.0f, 0.0f), false, ImGuiWindowFlags_NoDecoration & ~ImGuiWindowFlags_NoScrollbar))
+        {
+            ImGui::SetCursorPosY(5.0f);
+
+            Util::Center(140.0f);
+            ImGui::InputTextEx("##name", "Track Name", track.name, 256, ImVec2(140.0f, 0.0f), 0);
+
+            Util::Center(48.0f);
+            ImGuiKnobs::Knob("Pan", &track.pan, -100.0f, 100.0f, 0.0f, "%.0f",
+                ImGuiKnobVariant_Wiper, 48.0f, ImGuiKnobFlags_DragHorizontal);
+
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5.0f);
+
+            float faderGain = std::powf(10.0f, track.gain / 20.0f);
+            const float sliderWidth = 20.0f;
+            Util::Center(sliderWidth);
+
+            const float maxSlider = std::powf(10.0f, 6.0f / 20.0f);
+            float sliderX = ImGui::GetCursorPosX();
+
+            ImGui::VSliderFloat("##gain", ImVec2(sliderWidth, Util::audioMeterFullHeight), &faderGain, 0.0f, maxSlider, "",
+                ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+
+            ImGui::SameLine(0.0f, 3.0f);
+
+            const Core::Audio::Mixer::MixableInfo& trackInfo = audioEngine->mixer.GetMixableInfo(track);
+            if (trackInfo.channels.size() == 1)
+            { 
+                Util::DrawAudioMeter(
+                    Util::DecibelToPercentage(trackInfo.channels[0].rms, audioEngine->mixer.minimumDecibelLevel), 
+                    Util::DecibelToPercentage(trackInfo.channels[0].peak, audioEngine->mixer.minimumDecibelLevel), 
+                    false, audioMeterStyle);
+            }
+            else if (trackInfo.channels.size() == 2)
+            {
+                Util::DrawAudioMeterStereo(
+                    Util::DecibelToPercentage(trackInfo.channels[0].rms, audioEngine->mixer.minimumDecibelLevel),
+                    Util::DecibelToPercentage(trackInfo.channels[1].rms, audioEngine->mixer.minimumDecibelLevel),
+                    Util::DecibelToPercentage(trackInfo.channels[0].peak, audioEngine->mixer.minimumDecibelLevel),
+                    Util::DecibelToPercentage(trackInfo.channels[1].peak, audioEngine->mixer.minimumDecibelLevel),
+                    false, false, audioMeterStyle);
+            }
+
+            ImGui::SetCursorPosX(sliderX);
+            float gainDb = 20.0f * std::log10f(faderGain);
+            ImGui::SetNextItemWidth(64.0f);
+            ImGui::InputFloat("##gain_input", &gainDb, 0.0f, 0.0f, "%.1fdB");
+            faderGain = std::powf(10.0f, gainDb / 20.0f);
+
+            track.gain = gainDb;
+        }
+        ImGui::EndChild();
+    }
+
+    inline void UI::RenderTracksWindow()
     {
         if (showTracksWindow)
         {
-            if (ImGui::Begin(tracksWindowTitle.c_str(), &showTracksWindow))
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+            {
+                if (ImGui::Begin(tracksWindowTitle.c_str(), &showTracksWindow))
+                {
+                    unsigned int trackIndex = 0;
+                    for (Core::Audio::TrackState::Track& track : audioEngine->trackState.GetAllTracks())
+                    {
+                        RenderTrackChannelStrip("track" + trackIndex, track);
+                        ImGui::SameLine(0.0f, 3.0f);
+                        ++trackIndex;
+                    }
+                }
+                ImGui::End();
+            }
+            ImGui::PopStyleVar();
+        }
+    }
+
+    inline void UI::RenderBusesWindow()
+    {
+        if (showBusesWindow)
+        {
+            if (ImGui::Begin(busesWindowTitle.c_str(), &showBusesWindow))
             {
                 const std::vector<Core::Audio::Mixer::ChannelInfo>& outputChannels = audioEngine->mixer.GetOutputInfo().channels;
                 if (outputChannels.size() > 0)
                 {
                     if (outputChannels.size() >= 2)
                         Util::DrawAudioMeterStereo(
-                            Util::DecibelToPercentage(outputChannels[0].rms, audioEngine->mixer.minimumDecibelLevel), 
+                            Util::DecibelToPercentage(outputChannels[0].rms, audioEngine->mixer.minimumDecibelLevel),
                             Util::DecibelToPercentage(outputChannels[1].rms, audioEngine->mixer.minimumDecibelLevel),
                             Util::DecibelToPercentage(outputChannels[0].peak, audioEngine->mixer.minimumDecibelLevel),
                             Util::DecibelToPercentage(outputChannels[1].peak, audioEngine->mixer.minimumDecibelLevel),
@@ -481,19 +607,7 @@ namespace DigiDAW::UI
         }
     }
 
-    void UI::RenderBusesWindow()
-    {
-        if (showBusesWindow)
-        {
-            if (ImGui::Begin(busesWindowTitle.c_str(), &showBusesWindow))
-            {
-
-            }
-            ImGui::End();
-        }
-    }
-
-    void UI::RenderTimelineWindow()
+    inline void UI::RenderTimelineWindow()
     {
         if (showTimelineWindow)
         {
@@ -505,14 +619,14 @@ namespace DigiDAW::UI
         }
     }
 
-    void UI::InitializeDockspace(ImGuiID dockspace, ImGuiDockNodeFlags dockspaceFlags, ImVec2 size)
+    inline void UI::InitializeDockspace(ImGuiID dockspace, ImGuiDockNodeFlags dockspaceFlags, ImVec2 size)
     {
         ImGui::DockBuilderRemoveNode(dockspace);
         ImGui::DockBuilderAddNode(dockspace, dockspaceFlags | ImGuiDockNodeFlags_DockSpace);
         ImGui::DockBuilderSetNodeSize(dockspace, size);
 
         ImGuiID mainId = dockspace;
-        ImGuiID bottomId = ImGui::DockBuilderSplitNode(mainId, ImGuiDir_Down, 0.3f, nullptr, &mainId);
+        ImGuiID bottomId = ImGui::DockBuilderSplitNode(mainId, ImGuiDir_Down, 0.35f, nullptr, &mainId);
         ImGuiID bottomRightId = ImGui::DockBuilderSplitNode(bottomId, ImGuiDir_Right, 0.25f, nullptr, &bottomId);
 
         ImGui::DockBuilderDockWindow(timelineWindowTitle.c_str(), mainId);
@@ -522,15 +636,17 @@ namespace DigiDAW::UI
         ImGui::DockBuilderFinish(dockspace);
     }
 
-    void UI::RenderDockspace()
+    inline void UI::RenderDockspace()
     {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
         {
             ImGuiViewport* viewport = ImGui::GetMainViewport();
             ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_PassthruCentralNode;
 
+            // Set the Dockspace size and factor in the height of the status bar 
+            // (For some reason viewport->WorkPos and viewport->WorkSize leave space at the top)
             ImGui::SetNextWindowPos(viewport->Pos);
-            ImGui::SetNextWindowSize(viewport->Size);
+            ImGui::SetNextWindowSize(viewport->Size - ImVec2(0.0f, ImGui::GetFrameHeight()));
             ImGui::SetNextWindowViewport(viewport->ID);
 
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
@@ -556,7 +672,7 @@ namespace DigiDAW::UI
         ImGui::PopStyleVar();
     }
 
-    void UI::RenderMenuBars()
+    inline void UI::RenderMenuBars()
     {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
         {

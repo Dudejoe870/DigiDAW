@@ -313,6 +313,14 @@ namespace DigiDAW::Core::Audio
 			// Process Tracks (one thread per track)
 			for (const TrackState::Track& track : tracks)
 			{
+				// Note: MSVC implements std::async as a thread pool
+				// however GCC doesn't, it creates a thread every new async launched
+				// thus it could be a lot slower (I initially implemented this using std::thread, 
+				// however it became very clear that creating and destroying threads every single 
+				// audio frame was much too slow on Windows), however performance hasn't currently 
+				// been tested on Linux and Mac. Still, it could be a good idea 
+				// to reimplement this using an actual thread pool, as Linux and Mac compatibility 
+				// and performance is very much a priority.
 				trackInfo[&track].processAsync = std::async(std::launch::async,
 					[&]()
 					{
@@ -329,6 +337,7 @@ namespace DigiDAW::Core::Audio
 			// Send tracks to bus outputs
 			for (const TrackState::Track& track : tracks)
 			{
+				// Wait for this tracks thread to finish.
 				trackInfo[&track].processAsync.wait();
 
 				// Send out to buses by looping through all the bus outputs 

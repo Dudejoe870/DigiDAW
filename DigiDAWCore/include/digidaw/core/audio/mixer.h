@@ -1,5 +1,7 @@
 #pragma once
 
+#include "digidaw/core/threading/threadpool.h"
+
 #include "digidaw/core/audio/common.h"
 
 #include "digidaw/core/audio/trackstate.h"
@@ -102,7 +104,7 @@ namespace DigiDAW::Core::Audio
 
 			BusInfo(const TrackState::Bus& bus, unsigned int nFrames)
 			{
-				this->mainBusBuffer = MixBuffer(nFrames, (unsigned int)bus.nChannels);
+				this->mainBusBuffer = MixBuffer(nFrames, static_cast<unsigned int>(bus.nChannels));
 			}
 		};
 
@@ -116,6 +118,8 @@ namespace DigiDAW::Core::Audio
 		bool running = true;
 		bool shouldAddToLookback = true;
 		std::jthread mixerThread;
+
+		Threading::ThreadPool trackThreads;
 
 		void LerpMeter(float& value, const float& target, float deltaTime, float riseTime, float fallTime, float minimumValue)
 		{

@@ -49,7 +49,7 @@ namespace DigiDAW::Core::Audio
 				this->pan = 0.0f;
 			}
 
-			Mixable(std::string name, ChannelNumber nChannels, float gain, float pan)
+			Mixable(const std::string& name, ChannelNumber nChannels, float gain, float pan)
 			{
 				std::memset(this->name, 0, sizeof(this->name));
 				if (name.size() < 255 /* 255 as the end of the name needs to be a zero */) 
@@ -85,7 +85,7 @@ namespace DigiDAW::Core::Audio
 			{
 			}
 
-			Track(std::string name, ChannelNumber nChannels, float gain, float pan, const std::vector<BusOutput>& outputs)
+			Track(const std::string& name, ChannelNumber nChannels, float gain, float pan, const std::vector<BusOutput>& outputs)
 				: Mixable(name, nChannels, gain, pan)
 			{
 				this->outputs = outputs;
@@ -95,7 +95,7 @@ namespace DigiDAW::Core::Audio
 		};
 
 		// A Bus is the same as a track except it recieves other tracks as inputs + can output to the 
-		// current output device / buffer (if exporting) if specified.
+		// current output device / buffer (if exporting) when specified.
 		struct Bus : Mixable
 		{
 			std::vector<std::vector<unsigned int>> busChannelToDeviceOutputChannels;
@@ -104,7 +104,7 @@ namespace DigiDAW::Core::Audio
 			{
 			}
 
-			Bus(std::string name, ChannelNumber nChannels, float gain, float pan, const std::vector<std::vector<unsigned int>>& deviceOutputs)
+			Bus(const std::string& name, ChannelNumber nChannels, float gain, float pan, const std::vector<std::vector<unsigned int>>& deviceOutputs)
 				: Mixable(name, nChannels, gain, pan)
 			{
 				this->busChannelToDeviceOutputChannels = deviceOutputs;

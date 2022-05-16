@@ -1,6 +1,8 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 
+#include "imgui_stacklayout.h"
+
 #include "digidaw/ui/ui.h"
 #include "digidaw/ui/timer.h"
 
@@ -133,7 +135,7 @@ namespace DigiDAW::UI
         SettingsTryGetColor("UI", "audioMeter_highRangeColor", audioMeterStyle.highRangeColor);
 
         // Set the current API.
-        unsigned int settingsApi = (unsigned int)RtAudio::Api::UNSPECIFIED;
+        unsigned int settingsApi = static_cast<unsigned int>(RtAudio::Api::UNSPECIFIED);
         SettingsTryGetUInt("Audio", "api", settingsApi);
 
         // Make sure that the API selected is supported and is within the enum range. Otherwise use the default.
@@ -232,7 +234,7 @@ namespace DigiDAW::UI
     {
         // Audio
         SettingsSave("Audio", "bufferSize", audioEngine->GetCurrentBufferSize());
-        SettingsSave("Audio", "api", (int)audioEngine->GetCurrentAPI());
+        SettingsSave("Audio", "api", static_cast<int>(audioEngine->GetCurrentAPI()));
         SettingsSave("Audio", "sampleRate", audioEngine->GetCurrentSampleRate());
 
         const std::vector<Core::Audio::Engine::AudioDevice>& devices = audioEngine->GetDevices();
@@ -273,7 +275,7 @@ namespace DigiDAW::UI
         RenderDockspace();
 
         // For Development purposes...
-        ImGui::ShowDemoWindow();
+        //ImGui::ShowDemoWindow();
         // ...
         
         RenderTracksWindow();
@@ -485,9 +487,12 @@ namespace DigiDAW::UI
                             ImGui::EndTooltip();
                         }
 
-                        Util::DrawAudioMeterStereo(1.0f, 0.5f, 1.0f, 0.7f, true, false, audioMeterStyle);
-                        ImGui::SameLine();
-                        Util::DrawAudioMeter(0.7f, 0.8f, true, audioMeterStyle);
+                        ImGui::BeginHorizontal("##audio_meters_layout");
+                        {
+                            Util::DrawAudioMeterStereo("##stereo_audio_meter_layout", 1.0f, 0.5f, 1.0f, 0.7f, true, false, audioMeterStyle);
+                            Util::DrawAudioMeter("##mono_audio_meter_layout", 0.7f, 0.8f, true, audioMeterStyle);
+                        }
+                        ImGui::EndHorizontal();
 
                         if (saveSettings)
                             SaveSettings();
@@ -504,79 +509,66 @@ namespace DigiDAW::UI
 
     inline void UI::RenderTrackChannelStrip(const std::string& name, Core::Audio::TrackState::Track& track)
     {
-        if (ImGui::BeginChild(std::string("##" + name).c_str(), ImVec2(225.0f, 0.0f), false, ImGuiWindowFlags_NoDecoration & ~ImGuiWindowFlags_NoScrollbar))
+        ImGui::BeginVertical(std::string("##" + name).c_str(), ImVec2(140.0f, 0.0f), 0.5f);
         {
-            ImGui::SetCursorPosY(5.0f);
-
-            Util::Center(140.0f);
             ImGui::InputTextEx("##name", "Track Name", track.name, 256, ImVec2(140.0f, 0.0f), 0);
 
-            Util::Center(48.0f);
             ImGuiKnobs::Knob("Pan", &track.pan, -100.0f, 100.0f, 0.0f, "%.0f",
                 ImGuiKnobVariant_Wiper, 48.0f, ImGuiKnobFlags_DragHorizontal);
 
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5.0f);
-
             float faderGain = std::powf(10.0f, track.gain / 20.0f);
-            const float sliderWidth = 20.0f;
-            Util::Center(sliderWidth);
-
-            const float maxSlider = std::powf(10.0f, 6.0f / 20.0f);
-            float sliderX = ImGui::GetCursorPosX();
-
-            ImGui::VSliderFloat("##gain", ImVec2(sliderWidth, Util::audioMeterFullHeight), &faderGain, 0.0f, maxSlider, "",
-                ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
-
-            ImGui::SameLine(0.0f, 3.0f);
-
-            const Core::Audio::Mixer::MixableInfo& trackInfo = audioEngine->mixer.GetMixableInfo(track);
-            if (trackInfo.channels.size() == 1)
-            { 
-                Util::DrawAudioMeter(
-                    Util::DecibelToPercentage(trackInfo.channels[0].rms, audioEngine->mixer.minimumDecibelLevel), 
-                    Util::DecibelToPercentage(trackInfo.channels[0].peak, audioEngine->mixer.minimumDecibelLevel), 
-                    false, audioMeterStyle);
-            }
-            else if (trackInfo.channels.size() == 2)
+            ImGui::BeginHorizontal("##fader_meter_layout", ImVec2(0.0f, 0.0f), 0.5f);
             {
-                Util::DrawAudioMeterStereo(
-                    Util::DecibelToPercentage(trackInfo.channels[0].rms, audioEngine->mixer.minimumDecibelLevel),
-                    Util::DecibelToPercentage(trackInfo.channels[1].rms, audioEngine->mixer.minimumDecibelLevel),
-                    Util::DecibelToPercentage(trackInfo.channels[0].peak, audioEngine->mixer.minimumDecibelLevel),
-                    Util::DecibelToPercentage(trackInfo.channels[1].peak, audioEngine->mixer.minimumDecibelLevel),
-                    false, false, audioMeterStyle);
+                const float maxSlider = std::powf(10.0f, 6.0f / 20.0f);
+
+                ImGui::VSliderFloat("##gain", ImVec2(20.0f, Util::audioMeterFullHeight), &faderGain, 0.0f, maxSlider, "",
+                    ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+
+                const Core::Audio::Mixer::MixableInfo& trackInfo = audioEngine->mixer.GetMixableInfo(track);
+                if (trackInfo.channels.size() == 1)
+                {
+                    Util::DrawAudioMeter("##audio_meter_layout",
+                        Util::DecibelToPercentage(trackInfo.channels[0].rms, audioEngine->mixer.minimumDecibelLevel),
+                        Util::DecibelToPercentage(trackInfo.channels[0].peak, audioEngine->mixer.minimumDecibelLevel),
+                        false, audioMeterStyle);
+                }
+                else if (trackInfo.channels.size() == 2)
+                {
+                    Util::DrawAudioMeterStereo("##audio_meter_layout",
+                        Util::DecibelToPercentage(trackInfo.channels[0].rms, audioEngine->mixer.minimumDecibelLevel),
+                        Util::DecibelToPercentage(trackInfo.channels[1].rms, audioEngine->mixer.minimumDecibelLevel),
+                        Util::DecibelToPercentage(trackInfo.channels[0].peak, audioEngine->mixer.minimumDecibelLevel),
+                        Util::DecibelToPercentage(trackInfo.channels[1].peak, audioEngine->mixer.minimumDecibelLevel),
+                        false, false, audioMeterStyle);
+                }
             }
+            ImGui::EndHorizontal();
 
-            ImGui::SetCursorPosX(sliderX);
-            float gainDb = 20.0f * std::log10f(faderGain);
+            track.gain = 20.0f * std::log10f(faderGain);
             ImGui::SetNextItemWidth(64.0f);
-            ImGui::InputFloat("##gain_input", &gainDb, 0.0f, 0.0f, "%.1fdB");
-            faderGain = std::powf(10.0f, gainDb / 20.0f);
-
-            track.gain = gainDb;
+            ImGui::InputFloat("##gain_input", &track.gain, 0.0f, 0.0f, "%.1fdB");
         }
-        ImGui::EndChild();
+        ImGui::EndVertical();
     }
 
     inline void UI::RenderTracksWindow()
     {
         if (showTracksWindow)
         {
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+            if (ImGui::Begin(tracksWindowTitle.c_str(), &showTracksWindow, ImGuiWindowFlags_HorizontalScrollbar))
             {
-                if (ImGui::Begin(tracksWindowTitle.c_str(), &showTracksWindow))
+                ImGui::BeginHorizontal("##track_channel_strips");
                 {
                     unsigned int trackIndex = 0;
                     for (Core::Audio::TrackState::Track& track : audioEngine->trackState.GetAllTracks())
                     {
                         RenderTrackChannelStrip("track" + trackIndex, track);
-                        ImGui::SameLine(0.0f, 3.0f);
                         ++trackIndex;
                     }
                 }
-                ImGui::End();
+                ImGui::EndHorizontal();
             }
-            ImGui::PopStyleVar();
+            ImGui::End();
         }
     }
 
@@ -584,20 +576,20 @@ namespace DigiDAW::UI
     {
         if (showBusesWindow)
         {
-            if (ImGui::Begin(busesWindowTitle.c_str(), &showBusesWindow))
+            if (ImGui::Begin(busesWindowTitle.c_str(), &showBusesWindow, ImGuiWindowFlags_HorizontalScrollbar))
             {
                 const std::vector<Core::Audio::Mixer::ChannelInfo>& outputChannels = audioEngine->mixer.GetOutputInfo().channels;
                 if (outputChannels.size() > 0)
                 {
                     if (outputChannels.size() >= 2)
-                        Util::DrawAudioMeterStereo(
+                        Util::DrawAudioMeterStereo("##output_audio_meter_layout",
                             Util::DecibelToPercentage(outputChannels[0].rms, audioEngine->mixer.minimumDecibelLevel),
                             Util::DecibelToPercentage(outputChannels[1].rms, audioEngine->mixer.minimumDecibelLevel),
                             Util::DecibelToPercentage(outputChannels[0].peak, audioEngine->mixer.minimumDecibelLevel),
                             Util::DecibelToPercentage(outputChannels[1].peak, audioEngine->mixer.minimumDecibelLevel),
                             false, false, audioMeterStyle);
                     else
-                        Util::DrawAudioMeter(
+                        Util::DrawAudioMeter("##output_audio_meter_layout",
                             Util::DecibelToPercentage(outputChannels[0].rms, audioEngine->mixer.minimumDecibelLevel),
                             Util::DecibelToPercentage(outputChannels[0].peak, audioEngine->mixer.minimumDecibelLevel),
                             false, audioMeterStyle);

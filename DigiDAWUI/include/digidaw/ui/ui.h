@@ -107,7 +107,7 @@ namespace DigiDAW::UI
 		{
 			try
 			{
-				out = (unsigned int)std::stoul(settingsStructure[section][name]);
+				out = static_cast<unsigned int>(std::stoul(settingsStructure[section][name]));
 				return true;
 			}
 			catch (std::invalid_argument&)

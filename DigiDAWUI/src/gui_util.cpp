@@ -1,6 +1,8 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 
+#include "imgui_stacklayout.h"
+
 #include "digidaw/ui/gui_util.h"
 
 #include <fmt/core.h>
@@ -129,35 +131,48 @@ namespace DigiDAW::UI
             rounding, ImDrawFlags_RoundCornersTop);
     }
 
-    void Util::DrawAudioMeter(
+    void Util::DrawAudioMeter(const std::string& layoutName,
         float rmsFraction, float peakFraction,
         bool clip,
         const AudioMeterStyle& audioMeterStyle)
     {
-        DrawAudioMeterEx(
-            rmsFraction, peakFraction,
-            clip,
-            audioMeterStyle);
-        ImGui::SameLine(0.0f, 3.0f);
-        DrawMeterLabels();
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+        ImGui::BeginHorizontal(layoutName.c_str());
+        {
+            DrawAudioMeterEx(
+                rmsFraction, peakFraction,
+                clip,
+                audioMeterStyle);
+            ImGui::Dummy(ImVec2(3.0f, 0.0f));
+            DrawMeterLabels();
+        }
+        ImGui::EndHorizontal();
+        ImGui::PopStyleVar();
     }
 
-    void Util::DrawAudioMeterStereo(
+    void Util::DrawAudioMeterStereo(const std::string& layoutName,
         float leftRmsFraction, float rightRmsFraction,
         float leftPeakFraction, float rightPeakFraction, 
         bool leftClip, bool rightClip, 
         const AudioMeterStyle& audioMeterStyle)
     {
-        DrawAudioMeterEx(
-            leftRmsFraction, leftPeakFraction,
-            leftClip, 
-            audioMeterStyle);
-        ImGui::SameLine(0.0f, audioMeterStyle.stereoMeterSpacing);
-        DrawAudioMeterEx(
-            rightRmsFraction, rightPeakFraction,
-            rightClip, 
-            audioMeterStyle);
-        ImGui::SameLine(0.0f, 3.0f);
-        DrawMeterLabels();
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+        ImGui::BeginHorizontal(layoutName.c_str(), ImVec2(0.0f, 0.0f), 0.0f);
+        {
+            DrawAudioMeterEx(
+                leftRmsFraction, leftPeakFraction,
+                leftClip,
+                audioMeterStyle);
+            ImGui::Dummy(ImVec2(audioMeterStyle.stereoMeterSpacing, 0.0f));
+            DrawAudioMeterEx(
+                rightRmsFraction, rightPeakFraction,
+                rightClip,
+                audioMeterStyle);
+            ImGui::Dummy(ImVec2(3.0f, 0.0f));
+            DrawMeterLabels();
+        }
+        ImGui::EndHorizontal();
+        ImGui::PopStyleVar();
     }
 }

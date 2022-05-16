@@ -48,6 +48,7 @@ The common dependencies between all platforms are
 - [ImGUI](https://github.com/ocornut/imgui) (Included already in the source) 
 - [ImGUI Knobs](https://github.com/altschuler/imgui-knobs) (Included already in the source)
 - [ImGui Addons (gallickgunner)](https://github.com/gallickgunner/ImGui-Addons) (Included already in the source)
+- [ImGui Stack Layout](https://github.com/thedmd/imgui/tree/feature/docking-layout-external) (Included already in the source (just a modified version of ImGui, so it's under the same license))
 - [mIni](https://github.com/pulzed/mINI) (Included already in the source)
 - [libsimdpp](https://github.com/p12tic/libsimdpp) (Included already in the source)
 - [rtaudio](https://github.com/thestk/rtaudio) (Included already as a git submodule)

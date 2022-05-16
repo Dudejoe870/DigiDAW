@@ -83,11 +83,11 @@ namespace DigiDAW::UI::Util
         float rmsFraction, float peakFraction,
         bool clip = false, 
         const AudioMeterStyle& audioMeterStyle = AudioMeterStyle());
-    void DrawAudioMeter(
+    void DrawAudioMeter(const std::string& layoutName,
         float rmsFraction, float peakFraction,
         bool clip = false,
         const AudioMeterStyle& audioMeterStyle = AudioMeterStyle());
-    void DrawAudioMeterStereo(
+    void DrawAudioMeterStereo(const std::string& layoutName,
         float leftRmsFraction, float rightRmsFraction,
         float leftPeakFraction, float rightPeakFraction, 
         bool leftClip = false, bool rightClip = false, 

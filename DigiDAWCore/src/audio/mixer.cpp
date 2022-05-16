@@ -7,7 +7,7 @@ namespace DigiDAW::Core::Audio
 {
 	Mixer::TrackInfo::TrackInfo(Engine& audioEngine, const TrackState::Track& track, unsigned int nFrames)
 	{
-		this->mainTrackBuffer = MixBuffer(audioEngine.GetCurrentBufferSize(), (unsigned int)track.nChannels);
+		this->mainTrackBuffer = MixBuffer(audioEngine.GetCurrentBufferSize(), static_cast<unsigned int>(track.nChannels));
 
 		// Each channel of this track has a mapping to the input channels of each bus it sends out to
 		for (unsigned int output = 0; output < track.outputs.size(); ++output)
@@ -16,7 +16,7 @@ namespace DigiDAW::Core::Audio
 			std::vector<MixBuffer> channelBuffers;
 
 			// Loop through each channel in the track and allocate the channel buffer for that output
-			for (unsigned int channel = 0; channel < (unsigned int)track.nChannels; ++channel)
+			for (unsigned int channel = 0; channel < static_cast<unsigned int>(track.nChannels); ++channel)
 				channelBuffers.push_back(MixBuffer(nFrames, busOutput.inputChannelToOutputChannels[channel].size()));
 
 			busOutputBuffers.push_back(channelBuffers);
@@ -84,9 +84,9 @@ namespace DigiDAW::Core::Audio
 									mixableInfo[&bus].lookbackBuffers[0].size(),
 									rmsBuffer,
 									peakBuffer);
-								mixableInfo[&bus].channels.resize((size_t)bus.nChannels);
+								mixableInfo[&bus].channels.resize(static_cast<std::size_t>(bus.nChannels));
 
-								for (unsigned int channel = 0; channel < (unsigned int)bus.nChannels; ++channel)
+								for (unsigned int channel = 0; channel < static_cast<unsigned int>(bus.nChannels); ++channel)
 								{
 									LerpMeter(mixableInfo[&bus].channels[channel].rms, rmsBuffer[channel],
 										(float)deltaTime,
@@ -109,9 +109,9 @@ namespace DigiDAW::Core::Audio
 									mixableInfo[&track].lookbackBuffers[0].size(),
 									rmsBuffer,
 									peakBuffer);
-								mixableInfo[&track].channels.resize((size_t)track.nChannels);
+								mixableInfo[&track].channels.resize(static_cast<std::size_t>(track.nChannels));
 
-								for (unsigned int channel = 0; channel < (unsigned int)track.nChannels; ++channel)
+								for (unsigned int channel = 0; channel < static_cast<unsigned int>(track.nChannels); ++channel)
 								{
 									LerpMeter(mixableInfo[&track].channels[channel].rms, rmsBuffer[channel],
 										(float)deltaTime,
@@ -212,20 +212,21 @@ namespace DigiDAW::Core::Audio
 		if (trackBuffer.empty()) return;
 
 		// Copy input buffer to track output buffer
-		Detail::SimdHelper::CopyBuffer(trackInputBuffer.data(), trackBuffer.data(), 0, 0, (size_t)track.nChannels * nFrames);
+		Detail::SimdHelper::CopyBuffer(trackInputBuffer.data(), trackBuffer.data(), 0, 0, 
+			static_cast<std::size_t>(track.nChannels) * nFrames);
 
 		// TODO: Apply effects
 
 		// Apply gain
-		ApplyGain(track.gain, trackBuffer, (unsigned int)track.nChannels, nFrames);
+		ApplyGain(track.gain, trackBuffer, static_cast<unsigned int>(track.nChannels), nFrames);
 
 		// TODO: Support Surround Panning
 		// Apply panning
 		if (track.nChannels == TrackState::ChannelNumber::Stereo)
-			ApplyStereoPanning(track.pan, trackBuffer, (unsigned int)track.nChannels, nFrames);
+			ApplyStereoPanning(track.pan, trackBuffer, static_cast<unsigned int>(track.nChannels), nFrames);
 
 		// Add final output to the lookback buffer
-		AddToLookback(trackBuffer.data(), mixableInfo[&track].lookbackBuffers, nFrames, (unsigned int)track.nChannels, sampleRate);
+		AddToLookback(trackBuffer.data(), mixableInfo[&track].lookbackBuffers, nFrames, static_cast<unsigned int>(track.nChannels), sampleRate);
 	}
 
 	inline void Mixer::ProcessBus(const TrackState::Bus& bus, unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate)
@@ -241,27 +242,28 @@ namespace DigiDAW::Core::Audio
 		// TODO: Support Surround Panning
 		// Apply panning
 		if (bus.nChannels == TrackState::ChannelNumber::Stereo)
-			ApplyStereoPanning(bus.pan, busBuffer, (unsigned int)bus.nChannels, nFrames);
+			ApplyStereoPanning(bus.pan, busBuffer, static_cast<unsigned int>(bus.nChannels), nFrames);
 
 		// Apply gain
-		ApplyGain(bus.gain, busBuffer, (unsigned int)bus.nChannels, nFrames);
+		ApplyGain(bus.gain, busBuffer, static_cast<unsigned int>(bus.nChannels), nFrames);
 
 		// Add final output to the lookback buffer
-		AddToLookback(busBuffer.data(), mixableInfo[&bus].lookbackBuffers, nFrames, (unsigned int)bus.nChannels, sampleRate);
+		AddToLookback(busBuffer.data(), mixableInfo[&bus].lookbackBuffers, nFrames, static_cast<unsigned int>(bus.nChannels), sampleRate);
 	}
 
 	inline void Mixer::AddToLookback(float* src, std::vector<std::vector<float>>& dst, unsigned nFrames, unsigned int nChannels, unsigned int sampleRate)
 	{
 		if (!shouldAddToLookback) return;
 
-		size_t amountOfSamples = (size_t)(((float)lookbackBufferIntervalMS / 1000.0f) * (float)sampleRate);
+		std::size_t amountOfSamples = static_cast<std::size_t>(
+			(static_cast<float>(lookbackBufferIntervalMS) / 1000.0f) * static_cast<float>(sampleRate));
 
 		dst.resize(nChannels);
 		for (unsigned int channel = 0; channel < nChannels; ++channel)
 		{
 			std::vector<float>& buffer = dst[channel];
 			buffer.reserve(amountOfSamples);
-			size_t offset = buffer.size();
+			std::size_t offset = buffer.size();
 			if (buffer.size() + nFrames >= amountOfSamples)
 			{
 				// TODO: OPTIMIZE THIS PLEASE
@@ -308,28 +310,30 @@ namespace DigiDAW::Core::Audio
 		{
 			// Zero out bus buffers
 			for (const TrackState::Bus& bus : buses)
-				Detail::SimdHelper::SetBuffer(busInfo[&bus].mainBusBuffer.buffer.data(), 0.0f, (size_t)bus.nChannels * nFrames, 0);
+				Detail::SimdHelper::SetBuffer(busInfo[&bus].mainBusBuffer.buffer.data(), 0.0f, 
+					static_cast<std::size_t>(bus.nChannels) * nFrames, 0);
 
+			trackThreads.Resize(tracks.size());
 			// Process Tracks (one thread per track)
 			for (const TrackState::Track& track : tracks)
 			{
-				// Note: MSVC implements std::async as a thread pool
-				// however GCC doesn't, it creates a thread every new async launched
-				// thus it could be a lot slower (I initially implemented this using std::thread, 
-				// however it became very clear that creating and destroying threads every single 
-				// audio frame was much too slow on Windows), however performance hasn't currently 
-				// been tested on Linux and Mac. Still, it could be a good idea 
-				// to reimplement this using an actual thread pool, as Linux and Mac compatibility 
-				// and performance is very much a priority.
-				trackInfo[&track].processAsync = std::async(std::launch::async,
+				trackInfo[&track].processAsync = trackThreads.Queue(
 					[&]()
 					{
 						// Currently we'll use silence for track inputs
-						std::vector<float> trackInput((size_t)track.nChannels * nFrames);
-						for (unsigned int channel = 0; channel < (unsigned int)track.nChannels; ++channel)
+						std::vector<float> trackInput(static_cast<std::size_t>(track.nChannels) * nFrames);
+						for (unsigned int channel = 0; channel < static_cast<unsigned int>(track.nChannels); ++channel)
+						{
 							for (unsigned int frame = 0; frame < nFrames; ++frame)
-								//trackInput[(channel * nFrames) + frame] = ((float)rand() / RAND_MAX) + 1.0f; // For debugging
+							{
+								//trackInput[(channel * nFrames) + frame] = ((float)rand() / RAND_MAX) + 1.0f; // For debugging (Fix this, not thread-safe, causes weird artifacts)
+								
+								//double sampleTime = (time + (static_cast<double>(frame) / static_cast<double>(sampleRate))); // For debugging
+								//trackInput[(channel * nFrames) + frame] = (std::cosf(2 * pi * 440.0 * sampleTime) * 0.5f) + 0.5f; // For debugging
+
 								trackInput[(channel * nFrames) + frame] = 0.0f;
+							}
+						}
 						ProcessTrack(trackInput, track, nFrames, sampleRate);
 					});
 			}
@@ -347,19 +351,20 @@ namespace DigiDAW::Core::Audio
 					TrackState::BusOutput busOutput = track.outputs[output];
 
 					// Loop through each channel in the track to get it's corresponding outputs to the bus
-					for (unsigned int channel = 0; channel < (unsigned int)track.nChannels; ++channel)
+					for (unsigned int channel = 0; channel < static_cast<unsigned int>(track.nChannels); ++channel)
 					{
 						// Copy the track buffer to this buffer
 						// for expanding the amount of channels to the amount of channels we are sending to the bus
 						// so that we can apply panning to Mono tracks.
 						std::vector<float>& channelOutputBuffer = trackInfo[&track].busOutputBuffers[output][channel].buffer;
-						for (unsigned int outChannel = 0; outChannel < (unsigned int)busOutput.inputChannelToOutputChannels[channel].size(); ++outChannel)
+						for (unsigned int outChannel = 0; outChannel < static_cast<unsigned int>(
+								busOutput.inputChannelToOutputChannels[channel].size()); ++outChannel)
 							Detail::SimdHelper::CopyBuffer(trackInfo[&track].mainTrackBuffer.buffer.data(), channelOutputBuffer.data(),
 								channel * nFrames, outChannel * nFrames, nFrames);
 
 						// TODO: Support Surround Panning
 						// Apply panning (for panning Mono tracks to Stereo buses)
-						if (busOutput.inputChannelToOutputChannels[channel].size() == (size_t)TrackState::ChannelNumber::Stereo
+						if (busOutput.inputChannelToOutputChannels[channel].size() == static_cast<std::size_t>(TrackState::ChannelNumber::Stereo)
 							&& track.nChannels == TrackState::ChannelNumber::Mono)
 							ApplyStereoPanning(track.pan, channelOutputBuffer, busOutput.inputChannelToOutputChannels[channel].size(), nFrames);
 
@@ -391,7 +396,7 @@ namespace DigiDAW::Core::Audio
 			for (const TrackState::Bus& bus : buses)
 			{
 				// Send out to output device / buffer
-				for (unsigned int channel = 0; channel < (unsigned int)bus.nChannels; ++channel)
+				for (unsigned int channel = 0; channel < static_cast<unsigned int>(bus.nChannels); ++channel)
 				{
 					for (unsigned int outChannel : bus.busChannelToDeviceOutputChannels[channel])
 					{
@@ -414,8 +419,8 @@ namespace DigiDAW::Core::Audio
 			std::vector<float> testToneBuffer(nFrames);
 			for (unsigned int frame = 0; frame < nFrames; ++frame)
 			{
-				double sampleTime = (time + ((double)frame / (double)sampleRate)) - testToneStartTime;
-				float amplitude = (float)(0.50 * 
+				double sampleTime = (time + (static_cast<double>(frame) / static_cast<double>(sampleRate))) - testToneStartTime;
+				float amplitude = static_cast<float>(0.50 * 
 					((std::clamp(1.0 - sampleTime, 0.0, 1.0)) * // Fade Out
 					(std::clamp(sampleTime, 0.0, 1.0))) * // Fade In
 					((std::cosf(2 * pi * 440.0 * sampleTime) * 0.5f) + 0.5f));

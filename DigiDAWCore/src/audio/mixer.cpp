@@ -74,11 +74,12 @@ namespace DigiDAW::Core::Audio
 
 					if (!tracks.empty() || !buses.empty())
 					{
-						shouldAddToLookback = false;
 						for (const TrackState::Bus& bus : buses)
 						{
 							if (!mixableInfo[&bus].lookbackBuffers.empty())
 							{
+								std::lock_guard<std::mutex>(mixableInfo[&bus].lookbackBufferMutex);
+
 								Detail::SimdHelper::GetBufferRMSAndPeakMultiChannel(
 									mixableInfo[&bus].lookbackBuffers,
 									mixableInfo[&bus].lookbackBuffers[0].size(),
@@ -104,6 +105,8 @@ namespace DigiDAW::Core::Audio
 						{
 							if (!mixableInfo[&track].lookbackBuffers.empty())
 							{
+								std::lock_guard<std::mutex>(mixableInfo[&track].lookbackBufferMutex);
+
 								Detail::SimdHelper::GetBufferRMSAndPeakMultiChannel(
 									mixableInfo[&track].lookbackBuffers,
 									mixableInfo[&track].lookbackBuffers[0].size(),
@@ -127,6 +130,8 @@ namespace DigiDAW::Core::Audio
 
 						if (!outputInfo.lookbackBuffers.empty())
 						{
+							std::lock_guard<std::mutex>(outputInfo.lookbackBufferMutex);
+
 							Detail::SimdHelper::GetBufferRMSAndPeakMultiChannel(
 								outputInfo.lookbackBuffers,
 								outputInfo.lookbackBuffers[0].size(),
@@ -146,8 +151,6 @@ namespace DigiDAW::Core::Audio
 									minimumDecibelLevel);
 							}
 						}
-						
-						shouldAddToLookback = true;
 					}
 
 					lastTime = currentTime;
@@ -226,7 +229,10 @@ namespace DigiDAW::Core::Audio
 			ApplyStereoPanning(track.pan, trackBuffer, static_cast<unsigned int>(track.nChannels), nFrames);
 
 		// Add final output to the lookback buffer
-		AddToLookback(trackBuffer.data(), mixableInfo[&track].lookbackBuffers, nFrames, static_cast<unsigned int>(track.nChannels), sampleRate);
+		AddToLookback(trackBuffer.data(), 
+			mixableInfo[&track].lookbackBuffers,
+			mixableInfo[&track].lookbackBufferMutex, 
+			nFrames, static_cast<unsigned int>(track.nChannels), sampleRate);
 	}
 
 	inline void Mixer::ProcessBus(const TrackState::Bus& bus, unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate)
@@ -248,48 +254,10 @@ namespace DigiDAW::Core::Audio
 		ApplyGain(bus.gain, busBuffer, static_cast<unsigned int>(bus.nChannels), nFrames);
 
 		// Add final output to the lookback buffer
-		AddToLookback(busBuffer.data(), mixableInfo[&bus].lookbackBuffers, nFrames, static_cast<unsigned int>(bus.nChannels), sampleRate);
-	}
-
-	inline void Mixer::AddToLookback(float* src, std::vector<std::vector<float>>& dst, unsigned nFrames, unsigned int nChannels, unsigned int sampleRate)
-	{
-		if (!shouldAddToLookback) return;
-
-		std::size_t amountOfSamples = static_cast<std::size_t>(
-			(static_cast<float>(lookbackBufferIntervalMS) / 1000.0f) * static_cast<float>(sampleRate));
-
-		dst.resize(nChannels);
-		for (unsigned int channel = 0; channel < nChannels; ++channel)
-		{
-			std::vector<float>& buffer = dst[channel];
-			buffer.reserve(amountOfSamples);
-			std::size_t offset = buffer.size();
-			if (buffer.size() + nFrames >= amountOfSamples)
-			{
-				// TODO: OPTIMIZE THIS PLEASE
-				// This is really not very optimal
-				// currently I'm not going to concern myself
-				// with the performance implications of this
-				// but if performance is bad, this is probably one 
-				// of the first places I'd look, as this is called 
-				// every single audio frame, and we're basically using a 
-				// vector as a circular buffer. And while it'd be nice to 
-				// use a more optimal data structure like an actual circular 
-				// buffer, in this case the size can actually change, 
-				// and we need the memory to be contiguous.
-				// One idea is instead of using the erase function,
-				// we could write a SIMD vector shift function to shift 
-				// everything over by nFrames, making room for the new data.
-				// However there could still be a more optimal way.
-				// (remember we need to get the peaks and averages)
-
-				buffer.resize(amountOfSamples);
-				offset -= nFrames;
-				buffer.erase(buffer.begin(), buffer.begin() + nFrames);
-			} else buffer.resize(buffer.size() + nFrames);
-
-			Detail::SimdHelper::CopyBuffer(src, buffer.data(), channel * nFrames, offset, nFrames);
-		}
+		AddToLookback(busBuffer.data(), 
+			mixableInfo[&bus].lookbackBuffers, 
+			mixableInfo[&bus].lookbackBufferMutex, 
+			nFrames, static_cast<unsigned int>(bus.nChannels), sampleRate);
 	}
 
 	void Mixer::Mix(
@@ -431,7 +399,53 @@ namespace DigiDAW::Core::Audio
 				Detail::SimdHelper::CopyBuffer(testToneBuffer.data(), outputBuffer, 0, channel * nFrames, testToneBuffer.size());
 		}
 
-		AddToLookback(outputBuffer, outputInfo.lookbackBuffers, nFrames, nOutChannels, sampleRate);
+		AddToLookback(outputBuffer, 
+			outputInfo.lookbackBuffers,
+			outputInfo.lookbackBufferMutex, 
+			nFrames, nOutChannels, sampleRate);
+	}
+
+	inline void Mixer::AddToLookback(float* src, std::vector<std::vector<float>>& dst, std::mutex& mutex, unsigned nFrames, unsigned int nChannels, unsigned int sampleRate)
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+
+		std::size_t amountOfSamples = static_cast<std::size_t>(
+			(static_cast<float>(lookbackBufferIntervalMS) / 1000.0f) * static_cast<float>(sampleRate));
+
+		dst.resize(nChannels);
+		for (unsigned int channel = 0; channel < nChannels; ++channel)
+		{
+			std::vector<float>& buffer = dst[channel];
+			buffer.reserve(amountOfSamples);
+			std::size_t offset = buffer.size();
+			if (buffer.size() + nFrames >= amountOfSamples)
+			{
+				// TODO: OPTIMIZE THIS PLEASE
+				// This is really not very optimal
+				// currently I'm not going to concern myself
+				// with the performance implications of this
+				// but if performance is bad, this is probably one 
+				// of the first places I'd look, as this is called 
+				// every single audio frame, and we're basically using a 
+				// vector as a circular buffer. And while it'd be nice to 
+				// use a more optimal data structure like an actual circular 
+				// buffer, in this case the size can actually change, 
+				// and we need the memory to be contiguous.
+				// One idea is instead of using the erase function,
+				// we could write a SIMD vector shift function to shift 
+				// everything over by nFrames, making room for the new data.
+				// However there could still be a more optimal way.
+				// (remember we need to get the peaks and averages, 
+				// but VSTs will need this to be in the correct order too)
+
+				buffer.resize(amountOfSamples);
+				offset -= nFrames;
+				buffer.erase(buffer.begin(), buffer.begin() + nFrames);
+			}
+			else buffer.resize(buffer.size() + nFrames);
+
+			Detail::SimdHelper::CopyBuffer(src, buffer.data(), channel * nFrames, offset, nFrames);
+		}
 	}
 
 	void Mixer::StartTestTone()

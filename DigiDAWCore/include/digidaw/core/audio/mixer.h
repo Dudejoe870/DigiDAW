@@ -51,6 +51,7 @@ namespace DigiDAW::Core::Audio
 			std::vector<ChannelInfo> channels;
 		private:
 			std::vector<std::vector<float>> lookbackBuffers; // The lookback buffers that are used to calculate the amplitudes used for metering.
+			std::mutex lookbackBufferMutex;
 		public:
 			MixableInfo()
 			{
@@ -116,7 +117,6 @@ namespace DigiDAW::Core::Audio
 		unsigned int nOutChannels;
 
 		bool running = true;
-		bool shouldAddToLookback = true;
 		std::jthread mixerThread;
 
 		Threading::ThreadPool trackThreads;
@@ -131,7 +131,7 @@ namespace DigiDAW::Core::Audio
 			value = std::max(std::lerp(value, target, t), minimumValue);
 		}
 
-		void AddToLookback(float* src, std::vector<std::vector<float>>& dst, unsigned nFrames, unsigned int nChannels, unsigned int sampleRate);
+		void AddToLookback(float* src, std::vector<std::vector<float>>& dst, std::mutex& mutex, unsigned nFrames, unsigned int nChannels, unsigned int sampleRate);
 
 		void ApplyGain(float gain, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);
 		void ApplyStereoPanning(float pan, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);

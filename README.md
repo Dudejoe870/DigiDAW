@@ -3,7 +3,7 @@
 
 ## About
 
-DigiDAW is a Digital Audio Workstation focused on being easy to use, free, and completely open-source.
+DigiDAW is a Digital Audio Workstation focused on being easy to use, free, and completely open-source (Under the MIT License).
 
 **[CURRENTLY VERY WORK IN PROGRESS, FEATURES COULD BE COMPLETELY NON-EXISTENT, BUGGY, OR BROKEN. PLEASE BE ADVISED]**
 
@@ -11,7 +11,9 @@ DigiDAW is a Digital Audio Workstation focused on being easy to use, free, and c
 If you do not have a CPU from 2013 or later (2015 or later for AMD) then 
 you can choose to use only AVX, however if your CPU doesn't support 
 even that you can disable SIMD entirely (not recommended) 
-using the DIGIDAW_COMPILE_WITH_AVX and DIGIDAW_AVX2 compile options respectively.
+using the DIGIDAW_COMPILE_WITH_AVX and DIGIDAW_AVX2 compile options respectively. 
+Dynamic dispatch (automatically selecting which extensions to use) is currently 
+not implemented, but possible.
 
 ## Supported Audio Backends
 
@@ -57,6 +59,9 @@ The common dependencies between all platforms are
 
 - [Jack](https://jackaudio.org)/[ALSA](https://www.alsa-project.org/wiki/Main_Page)/[PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/) (At least one of these is required for audio to be functional)
 
+## Contribution
+See [this](CONTRIBUTION.md) for details.
+
 ## Building
 
 This section is about building DigiDAW. This is currently the only way of obtaining and using the software as it is very early.
@@ -82,13 +87,13 @@ to download that click [here](https://visualstudio.microsoft.com/downloads/).
 After downloading and installing Visual Studio 2022, open it (making sure that you installed the C++ development component)
 you want to click the ``Open Local Folder`` button and navigate to where you cloned the repository.
 
-Once you're here, you should simply be able to click the green arrow at the top of the screen to build and run the application.
+Once you're here, you should simply be able to click the green arrow (you can select Debug or Release with the dropdown) at the top of the screen to build and run the application.
 
 ## Linux
 
-Linux building hasn't been tested yet.
+Linux building hasn't been tested yet but should probably work (just use CMake with GCC / Clang).
 
 ## MacOS (x86 only currently)
 
-Unfortunately MacOS building hasn't been tested, it should be technically possible,
-but the steps to do so won't be discussed here.
+MacOS building hasn't been tested as I don't have a Mac to test with, it should be technically possible,
+but the steps to do so won't be discussed here (This project uses the CMake build system so if you know how to use that, you can probably figure it out).

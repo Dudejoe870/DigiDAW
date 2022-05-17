@@ -144,10 +144,11 @@ namespace DigiDAW::UI
 		unsigned int GetDeviceByName(std::string name);
 
 		void ModifyStyle(ImGuiStyle& style, bool withBorder);
+		void CreateLowContrastTheme(ImGuiStyle& style);
 
 		void SaveSettings();
 
-		void RenderTrackChannelStrip(const std::string& name, Core::Audio::TrackState::Track& track);
+		void RenderTrackChannelStrip(const std::string& name, Core::Audio::TrackState::Track& track, bool evenTrack);
 
 		void RenderTracksWindow();
 		void RenderBusesWindow();

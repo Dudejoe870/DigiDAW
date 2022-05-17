@@ -9,6 +9,10 @@
 
 namespace DigiDAW::UI
 {
+    const float Util::audioMeterClipIndicatorHeight = 6.0f;
+    const float Util::audioMeterHeight = 270.0f;
+    const float Util::audioMeterFullHeight = audioMeterHeight + audioMeterClipIndicatorHeight;
+
     void Util::DrawMeterLabels(float minimumDecibel)
     {
         ImGuiWindow* window = ImGui::GetCurrentWindow();

@@ -61,16 +61,21 @@ just with the abbreviation being uppercase.
 See above for examples of all cases.
 
 ### Other Notes
-Static classes (classes with only static members in them) should be avoided, 
-and instead replaced with namespaces, for example:
+Static classes (classes with only static members in them) should be used 
+instead of namespaces, for example:
+
 Use
 ```C++
 // StaticHelpers.h
-namespace My::Namespace::Path::StaticHelpers
+namespace My::Namespace::Path
 {
-    extern unsigned int someVariableOrWhatever;
+    class StaticHelpers
+    {
+    public:
+        static unsigned int someVariableOrWhatever;
 
-    void MyStaticFunction();
+        static void MyStaticFunction();
+    };
 }
 
 // StaticHelpers.cpp
@@ -87,15 +92,11 @@ namespace My::Namespace::Path
 Instead of
 ```C++
 // StaticHelpers.h
-namespace My::Namespace::Path
+namespace My::Namespace::Path::StaticHelpers
 {
-    class StaticHelpers
-    {
-    public:
-        static unsigned int someVariableOrWhatever;
+    extern unsigned int someVariableOrWhatever;
 
-        static void MyStaticFunction();
-    };
+    void MyStaticFunction();
 }
 
 // StaticHelpers.cpp

@@ -384,7 +384,10 @@ namespace DigiDAW::Core::Audio
 				AudioCallback, this, &options);
 
 		if (streamError != RTAUDIO_NO_ERROR)
+		{
+			if (IsStreamOpen()) audioBackend->closeStream();
 			return ReturnCode::Error;
+		}
 
 		currentBufferSize = bufferSize;
 		mixer.UpdateAllTrackBuffers();

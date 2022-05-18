@@ -78,7 +78,7 @@ namespace DigiDAW::Core::Audio
 						{
 							if (!mixableInfo[&bus].lookbackBuffers.empty())
 							{
-								std::lock_guard<std::mutex>(mixableInfo[&bus].lookbackBufferMutex);
+								std::lock_guard<std::mutex> lock(mixableInfo[&bus].lookbackBufferMutex);
 
 								Detail::SimdHelper::GetBufferRMSAndPeakMultiChannel(
 									mixableInfo[&bus].lookbackBuffers,
@@ -105,7 +105,7 @@ namespace DigiDAW::Core::Audio
 						{
 							if (!mixableInfo[&track].lookbackBuffers.empty())
 							{
-								std::lock_guard<std::mutex>(mixableInfo[&track].lookbackBufferMutex);
+								std::lock_guard<std::mutex> lock(mixableInfo[&track].lookbackBufferMutex);
 
 								Detail::SimdHelper::GetBufferRMSAndPeakMultiChannel(
 									mixableInfo[&track].lookbackBuffers,
@@ -130,7 +130,7 @@ namespace DigiDAW::Core::Audio
 
 						if (!outputInfo.lookbackBuffers.empty())
 						{
-							std::lock_guard<std::mutex>(outputInfo.lookbackBufferMutex);
+							std::lock_guard<std::mutex> lock(outputInfo.lookbackBufferMutex);
 
 							Detail::SimdHelper::GetBufferRMSAndPeakMultiChannel(
 								outputInfo.lookbackBuffers,

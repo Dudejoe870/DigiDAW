@@ -141,16 +141,18 @@ namespace DigiDAW::UI
         const AudioMeterStyle& audioMeterStyle)
     {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
-        ImGui::BeginHorizontal(layoutName.c_str());
         {
-            DrawAudioMeterEx(
-                rmsFraction, peakFraction,
-                clip,
-                audioMeterStyle);
-            ImGui::Dummy(ImVec2(3.0f, 0.0f));
-            DrawMeterLabels();
+            ImGui::BeginHorizontal(layoutName.c_str());
+            {
+                DrawAudioMeterEx(
+                    rmsFraction, peakFraction,
+                    clip,
+                    audioMeterStyle);
+                ImGui::Dummy(ImVec2(3.0f, 0.0f));
+                DrawMeterLabels();
+            }
+            ImGui::EndHorizontal();
         }
-        ImGui::EndHorizontal();
         ImGui::PopStyleVar();
     }
 
@@ -162,21 +164,23 @@ namespace DigiDAW::UI
     {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
-        ImGui::BeginHorizontal(layoutName.c_str(), ImVec2(0.0f, 0.0f), 0.0f);
         {
-            DrawAudioMeterEx(
-                leftRmsFraction, leftPeakFraction,
-                leftClip,
-                audioMeterStyle);
-            ImGui::Dummy(ImVec2(audioMeterStyle.stereoMeterSpacing, 0.0f));
-            DrawAudioMeterEx(
-                rightRmsFraction, rightPeakFraction,
-                rightClip,
-                audioMeterStyle);
-            ImGui::Dummy(ImVec2(3.0f, 0.0f));
-            DrawMeterLabels();
+            ImGui::BeginHorizontal(layoutName.c_str(), ImVec2(0.0f, 0.0f), 0.0f);
+            {
+                DrawAudioMeterEx(
+                    leftRmsFraction, leftPeakFraction,
+                    leftClip,
+                    audioMeterStyle);
+                ImGui::Dummy(ImVec2(audioMeterStyle.stereoMeterSpacing, 0.0f));
+                DrawAudioMeterEx(
+                    rightRmsFraction, rightPeakFraction,
+                    rightClip,
+                    audioMeterStyle);
+                ImGui::Dummy(ImVec2(3.0f, 0.0f));
+                DrawMeterLabels();
+            }
+            ImGui::EndHorizontal();
         }
-        ImGui::EndHorizontal();
         ImGui::PopStyleVar();
     }
 }

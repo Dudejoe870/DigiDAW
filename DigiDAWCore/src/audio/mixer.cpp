@@ -197,7 +197,7 @@ namespace DigiDAW::Core::Audio
 
 		// Sine-law panning
 		float panning = (pan / 200.0f) + 0.5f;
-		const float pidiv2 = (const float)pi / 2.0f;
+		const float pidiv2 = pi<float> / 2.0f;
 		float rightAmplitude = std::sinf(panning * pidiv2);
 		float leftAmplitude = std::sinf((1.0f - panning) * pidiv2);
 
@@ -391,7 +391,7 @@ namespace DigiDAW::Core::Audio
 				float amplitude = static_cast<float>(0.50 * 
 					((std::clamp(1.0 - sampleTime, 0.0, 1.0)) * // Fade Out
 					(std::clamp(sampleTime, 0.0, 1.0))) * // Fade In
-					((std::cosf(2 * pi * 440.0 * sampleTime) * 0.5f) + 0.5f));
+					((std::cosf(2 * pi<double> * 440.0 * sampleTime) * 0.5f) + 0.5f));
 				testToneBuffer[frame] = amplitude;
 			}
 

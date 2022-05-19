@@ -9,6 +9,9 @@ namespace DigiDAW::UI::Windows
 	{
 	private:
 		std::shared_ptr<UIState> state;
+
+		void RenderAudioTab();
+		void RenderUITab();
 	public:
 		Settings(bool open, std::shared_ptr<UIState>& state);
 

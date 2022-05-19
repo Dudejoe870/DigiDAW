@@ -3,6 +3,8 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
+#include <digidaw/core/audio/engine.h>
+
 #include <cmath>
 #include <algorithm>
 
@@ -82,6 +84,8 @@ namespace DigiDAW::UI
         static const float audioMeterHeight;
         static const float audioMeterFullHeight;
 
+        static const float channelStripWidth;
+
         static void DrawMeterLabels(float minimumDecibel = -60.0f);
         static void DrawAudioMeterEx(
             float rmsFraction, float peakFraction,
@@ -96,5 +100,17 @@ namespace DigiDAW::UI
             float leftPeakFraction, float rightPeakFraction,
             bool leftClip = false, bool rightClip = false,
             const AudioMeterStyle& audioMeterStyle = AudioMeterStyle());
+
+        static void DrawChannelStripBackground(bool even);
+        static float DrawFaderMeterCombo(const std::string& layoutName,
+            std::shared_ptr<Core::Audio::Engine>& audioEngine, 
+            std::shared_ptr<Core::Audio::TrackState::Mixable> mixable,
+            const AudioMeterStyle& audioMeterStyle = AudioMeterStyle(), 
+            float maximumDecibel = 6.0f);
+        static void DrawMixableControls(const std::string& namePlaceholder,
+            std::shared_ptr<Core::Audio::Engine>& audioEngine,
+            std::shared_ptr<Core::Audio::TrackState::Mixable> mixable,
+            const AudioMeterStyle& audioMeterStyle = AudioMeterStyle(),
+            float maximumDecibel = 6.0f);
     };
 }

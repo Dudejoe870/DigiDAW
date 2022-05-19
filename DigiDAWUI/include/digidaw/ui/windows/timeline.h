@@ -9,6 +9,8 @@ namespace DigiDAW::UI::Windows
 	{
 	private:
 		std::shared_ptr<UIState> state;
+
+		ImGuiWindowClass windowClass;
 	public:
 		Timeline(bool open, std::shared_ptr<UIState>& state);
 

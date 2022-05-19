@@ -5,14 +5,12 @@
 
 namespace DigiDAW::UI::Windows
 {
-	class Buses : public Window
+	class EffectsChain : public Window
 	{
 	private:
 		std::shared_ptr<UIState> state;
 	public:
-		Buses(bool open, std::shared_ptr<UIState>& state);
-
-		void RenderBusChannelStrip(const std::string& name, std::shared_ptr<Core::Audio::TrackState::Bus>& bus, bool evenTrack);
+		EffectsChain(bool open, std::shared_ptr<UIState>& state);
 
 		void Render();
 		std::string GetName();

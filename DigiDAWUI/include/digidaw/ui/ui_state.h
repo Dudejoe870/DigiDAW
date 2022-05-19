@@ -252,11 +252,9 @@ namespace DigiDAW::UI
                 style.Colors[i].z = grayscale;
             }
 
-            const ImVec4 windowBg = style.Colors[ImGuiCol_WindowBg];
-            style.Colors[ImGuiCol_ChildBg] = ImVec4(windowBg.x * 1.25f, windowBg.y * 1.25f, windowBg.z * 1.25f, 1.0f);
-
             style.Colors[ImGuiCol_Border] = ImVec4(0.0f, 0.0f, 0.0f, 0.5f);
 
+            const ImVec4 windowBg = style.Colors[ImGuiCol_WindowBg];
             style.Colors[ImGuiCol_TableRowBg] = ImVec4(windowBg.x * 1.15f, windowBg.y * 1.15f, windowBg.z * 1.15f, 1.0f);
             style.Colors[ImGuiCol_TableRowBgAlt] = ImVec4(windowBg.x * 0.95f, windowBg.y * 0.95f, windowBg.z * 0.95f, 1.0f);
 
@@ -282,6 +280,7 @@ namespace DigiDAW::UI
         void CreateLowContrastTheme(ImGuiStyle& style)
         {
             style.Colors[ImGuiCol_WindowBg] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
+            style.Colors[ImGuiCol_ChildBg] = style.Colors[ImGuiCol_WindowBg];
 
             style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
             style.Colors[ImGuiCol_PopupBg] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
@@ -293,8 +292,6 @@ namespace DigiDAW::UI
             style.Colors[ImGuiCol_Header] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
             style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
             style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.65f, 0.65f, 0.65f, 1.0f);
-
-            style.Colors[ImGuiCol_ChildBg] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
 
             style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
             style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);

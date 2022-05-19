@@ -5,13 +5,17 @@
 
 #include "digidaw/ui/gui_util.h"
 
+#include "imgui-knobs.h"
+
 #include <fmt/core.h>
 
 namespace DigiDAW::UI
 {
     const float Util::audioMeterClipIndicatorHeight = 6.0f;
-    const float Util::audioMeterHeight = 270.0f;
+    const float Util::audioMeterHeight = 220.0f;
     const float Util::audioMeterFullHeight = audioMeterHeight + audioMeterClipIndicatorHeight;
+
+    const float Util::channelStripWidth = 140.0f;
 
     void Util::DrawMeterLabels(float minimumDecibel)
     {
@@ -180,6 +184,84 @@ namespace DigiDAW::UI
                 DrawMeterLabels();
             }
             ImGui::EndHorizontal();
+        }
+        ImGui::PopStyleVar();
+    }
+
+    void Util::DrawChannelStripBackground(bool even)
+    {
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems)
+            return;
+
+        ImGuiContext& g = *GImGui;
+        const ImGuiStyle& style = g.Style;
+
+        ImGuiViewport* viewport = ImGui::GetWindowViewport();
+
+        ImVec2 pos = window->DC.CursorPos - ImVec2(0.0f, style.WindowPadding.y);
+        ImVec2 size = ImVec2(channelStripWidth, viewport->Size.y);
+        ImRect bb(pos, pos + size);
+
+        ImU32 bgColor = even ? ImGui::GetColorU32(ImGuiCol_TableRowBg) : ImGui::GetColorU32(ImGuiCol_TableRowBgAlt);
+        ImGui::RenderFrame(bb.Min, bb.Max, bgColor, false);
+    }
+
+    float Util::DrawFaderMeterCombo(const std::string& layoutName,
+        std::shared_ptr<Core::Audio::Engine>& audioEngine, 
+        std::shared_ptr<Core::Audio::TrackState::Mixable> mixable,
+        const AudioMeterStyle& audioMeterStyle, 
+        float maximumDecibel)
+    {
+        float faderGainLinear = std::powf(10.0f, mixable->gain / 20.0f);
+        ImGui::BeginHorizontal(layoutName.c_str(), ImVec2(0.0f, 0.0f), 0.5f);
+        {
+            const float maxSlider = std::powf(10.0f, maximumDecibel / 20.0f);
+
+            ImGui::VSliderFloat("##gain", ImVec2(20.0f, audioMeterFullHeight), &faderGainLinear, 0.0f, maxSlider, "",
+                ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+
+            const Core::Audio::Mixer::MixableInfo& mixableInfo = audioEngine->mixer.GetMixableInfo(mixable);
+            if (mixableInfo.channels.size() == 1)
+            {
+                DrawAudioMeter("##audio_meter_layout",
+                    DecibelToPercentage(mixableInfo.channels[0].rms, audioEngine->mixer.minimumDecibelLevel),
+                    DecibelToPercentage(mixableInfo.channels[0].peak, audioEngine->mixer.minimumDecibelLevel),
+                        false, audioMeterStyle);
+            }
+            else if (mixableInfo.channels.size() == 2)
+            {
+                DrawAudioMeterStereo("##audio_meter_layout",
+                    DecibelToPercentage(mixableInfo.channels[0].rms, audioEngine->mixer.minimumDecibelLevel),
+                    DecibelToPercentage(mixableInfo.channels[1].rms, audioEngine->mixer.minimumDecibelLevel),
+                    DecibelToPercentage(mixableInfo.channels[0].peak, audioEngine->mixer.minimumDecibelLevel),
+                    DecibelToPercentage(mixableInfo.channels[1].peak, audioEngine->mixer.minimumDecibelLevel),
+                        false, false, audioMeterStyle);
+            }
+        }
+        ImGui::EndHorizontal();
+        return faderGainLinear;
+    }
+
+    void Util::DrawMixableControls(const std::string& namePlaceholder,
+        std::shared_ptr<Core::Audio::Engine>& audioEngine,
+        std::shared_ptr<Core::Audio::TrackState::Mixable> mixable,
+        const AudioMeterStyle& audioMeterStyle,
+        float maximumDecibel)
+    {
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 3.0f));
+        {
+            ImGui::InputTextEx("##name", "Track Name", mixable->name, 256, ImVec2(channelStripWidth * 0.71f, 0.0f), 0);
+
+            ImGuiKnobs::Knob("Pan", &mixable->pan, -100.0f, 100.0f, 0.0f, "%.0f",
+                ImGuiKnobVariant_Wiper, 48.0f, ImGuiKnobFlags_DragHorizontal);
+
+            float faderGainLinear = DrawFaderMeterCombo(
+                "##fader_meter_layout", audioEngine, mixable, audioMeterStyle, 6.0f);
+
+            mixable->gain = 20.0f * std::log10f(faderGainLinear); // Convert from a linear value to decibels
+            ImGui::SetNextItemWidth(64.0f);
+            ImGui::InputFloat("##gain_input", &mixable->gain, 0.0f, 0.0f, "%.1fdB");
         }
         ImGui::PopStyleVar();
     }

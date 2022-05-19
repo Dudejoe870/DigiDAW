@@ -21,12 +21,12 @@ namespace DigiDAW::Core::Audio
 
 		struct BusOutput
 		{
-			std::reference_wrapper<Bus> bus;
+			std::shared_ptr<Bus> bus;
 			std::vector<std::vector<unsigned int>> inputChannelToOutputChannels;
 
-			BusOutput(Bus& bus, const std::vector<std::vector<unsigned int>>& outputChannels)
-				: bus(bus)
+			BusOutput(std::shared_ptr<Bus>& bus, const std::vector<std::vector<unsigned int>>& outputChannels)
 			{
+				this->bus = bus;
 				this->inputChannelToOutputChannels = outputChannels;
 			}
 		};
@@ -59,8 +59,6 @@ namespace DigiDAW::Core::Audio
 				this->gain = gain;
 				this->pan = pan;
 			}
-
-			inline bool operator==(const Mixable& rhs) { return this == &rhs; }
 		};
 
 		/*
@@ -90,8 +88,6 @@ namespace DigiDAW::Core::Audio
 			{
 				this->outputs = outputs;
 			}
-
-			inline bool operator==(const Track& rhs) { return this == &rhs; }
 		};
 
 		// A Bus is the same as a track except it recieves other tracks as inputs + can output to the 
@@ -109,31 +105,29 @@ namespace DigiDAW::Core::Audio
 			{
 				this->busChannelToDeviceOutputChannels = deviceOutputs;
 			}
-
-			inline bool operator==(const Bus& rhs) { return this == &rhs; }
 		};
 	private:
-		std::vector<Track> currentTracks;
-		std::vector<Bus> currentBuses;
+		std::vector<std::shared_ptr<Track>> currentTracks;
+		std::vector<std::shared_ptr<Bus>> currentBuses;
 	public:
-		std::vector<std::function<void(Track&)>> addTrackCallbacks;
-		std::vector<std::function<void(Track&)>> removeTrackCallbacks;
+		std::vector<std::function<void(std::shared_ptr<Track>)>> addTrackCallbacks;
+		std::vector<std::function<void(std::shared_ptr<Track>)>> removeTrackCallbacks;
 
-		std::vector<std::function<void(Bus&)>> addBusCallbacks;
-		std::vector<std::function<void(Bus&)>> removeBusCallbacks;
+		std::vector<std::function<void(std::shared_ptr<Bus>)>> addBusCallbacks;
+		std::vector<std::function<void(std::shared_ptr<Bus>)>> removeBusCallbacks;
 
-		Track& AddTrack(Track track);
-		Bus& AddBus(Bus bus);
+		std::shared_ptr<Track> AddTrack(Track track);
+		std::shared_ptr<Bus> AddBus(Bus bus);
 
-		void RemoveTrack(Track& track);
-		void RemoveBus(Bus& bus);
+		void RemoveTrack(std::shared_ptr<Track> track);
+		void RemoveBus(std::shared_ptr<Bus> bus);
 
-		std::vector<TrackState::Track>& GetAllTracks()
+		std::vector<std::shared_ptr<TrackState::Track>>& GetAllTracks()
 		{
 			return currentTracks;
 		}
 
-		std::vector<TrackState::Bus>& GetAllBuses()
+		std::vector<std::shared_ptr<TrackState::Bus>>& GetAllBuses()
 		{
 			return currentBuses;
 		}

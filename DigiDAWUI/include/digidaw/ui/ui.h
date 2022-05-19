@@ -8,6 +8,7 @@
 #include "digidaw/ui/ui_state.h"
 
 #include "digidaw/ui/windows/settings.h"
+#include "digidaw/ui/windows/effects_chain.h"
 #include "digidaw/ui/windows/timeline.h"
 #include "digidaw/ui/windows/tracks.h"
 #include "digidaw/ui/windows/buses.h"
@@ -30,6 +31,7 @@ namespace DigiDAW::UI
 
 		std::unique_ptr<Windows::Settings> settingsWindow;
 
+		std::unique_ptr<Windows::EffectsChain> effectsChainWindow;
 		std::unique_ptr<Windows::Timeline> timelineWindow;
 		std::unique_ptr<Windows::Tracks> tracksWindow;
 		std::unique_ptr<Windows::Buses> busesWindow;

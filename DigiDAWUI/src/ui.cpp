@@ -45,6 +45,7 @@ namespace DigiDAW::UI
 
         settingsWindow = std::make_unique<Windows::Settings>(false, state);
 
+        effectsChainWindow = std::make_unique<Windows::EffectsChain>(true, state);
         timelineWindow = std::make_unique<Windows::Timeline>(true, state);
         tracksWindow = std::make_unique<Windows::Tracks>(true, state);
         busesWindow = std::make_unique<Windows::Buses>(true, state);
@@ -65,6 +66,8 @@ namespace DigiDAW::UI
         // ...
 
         settingsWindow->Render();
+
+        effectsChainWindow->Render();
         timelineWindow->Render();
         tracksWindow->Render();
         busesWindow->Render();
@@ -77,10 +80,12 @@ namespace DigiDAW::UI
         ImGui::DockBuilderSetNodeSize(dockspace, size);
 
         ImGuiID mainId = dockspace;
-        ImGuiID bottomId = ImGui::DockBuilderSplitNode(mainId, ImGuiDir_Down, 0.35f, nullptr, &mainId);
+        ImGuiID bottomId = ImGui::DockBuilderSplitNode(mainId, ImGuiDir_Down, 0.32f, nullptr, &mainId);
+        ImGuiID topId = ImGui::DockBuilderSplitNode(mainId, ImGuiDir_Up, 0.25f, nullptr, &mainId);
         ImGuiID bottomRightId = ImGui::DockBuilderSplitNode(bottomId, ImGuiDir_Right, 0.25f, nullptr, &bottomId);
 
         ImGui::DockBuilderDockWindow(timelineWindow->GetName().c_str(), mainId);
+        ImGui::DockBuilderDockWindow(effectsChainWindow->GetName().c_str(), topId);
         ImGui::DockBuilderDockWindow(tracksWindow->GetName().c_str(), bottomId);
         ImGui::DockBuilderDockWindow(busesWindow->GetName().c_str(), bottomRightId);
 

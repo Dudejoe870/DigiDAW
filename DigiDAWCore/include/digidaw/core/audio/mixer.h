@@ -35,14 +35,12 @@ namespace DigiDAW::Core::Audio
 		public:
 			float rms;
 			float peak;
-		public:
+
 			ChannelInfo()
 			{
 				this->rms = -(float)INFINITY;
 				this->peak = -(float)INFINITY;
 			}
-
-			friend class Mixer;
 		};
 
 		struct MixableInfo
@@ -91,7 +89,7 @@ namespace DigiDAW::Core::Audio
 			{
 			}
 
-			TrackInfo(Engine& audioEngine, const TrackState::Track& track, unsigned int nFrames);
+			TrackInfo(Engine& audioEngine, const std::shared_ptr<TrackState::Track>& track, unsigned int nFrames);
 		};
 
 		struct BusInfo
@@ -100,12 +98,11 @@ namespace DigiDAW::Core::Audio
 
 			BusInfo()
 			{
-
 			}
 
-			BusInfo(const TrackState::Bus& bus, unsigned int nFrames)
+			BusInfo(const std::shared_ptr<TrackState::Bus>& bus, unsigned int nFrames)
 			{
-				this->mainBusBuffer = MixBuffer(nFrames, static_cast<unsigned int>(bus.nChannels));
+				this->mainBusBuffer = MixBuffer(nFrames, static_cast<unsigned int>(bus->nChannels));
 			}
 		};
 
@@ -121,6 +118,8 @@ namespace DigiDAW::Core::Audio
 
 		Threading::ThreadPool trackThreads;
 
+		// Basically this is an asymmetrical Lerp, where the speed varies 
+		// depending on if the target value is higher than the current value, or lower.
 		void LerpMeter(float& value, const float& target, float deltaTime, float riseTime, float fallTime, float minimumValue)
 		{
 			float time = (target > value) ? riseTime : fallTime;
@@ -131,13 +130,24 @@ namespace DigiDAW::Core::Audio
 			value = std::max(std::lerp(value, target, t), minimumValue);
 		}
 
-		void AddToLookback(float* src, std::vector<std::vector<float>>& dst, std::mutex& mutex, unsigned nFrames, unsigned int nChannels, unsigned int sampleRate);
+		void AddToLookback(
+			float* src, std::vector<std::vector<float>>& dst, 
+			std::mutex& mutex, 
+			unsigned nFrames, unsigned int nChannels, unsigned int sampleRate);
 
-		void ApplyGain(float gain, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);
-		void ApplyStereoPanning(float pan, std::vector<float>& buffer, unsigned int nChannels, unsigned int nFrames);
+		void ApplyGain(
+			float gain, std::vector<float>& buffer, 
+			unsigned int nChannels, unsigned int nFrames);
+		void ApplyStereoPanning(
+			float pan, std::vector<float>& buffer, 
+			unsigned int nChannels, unsigned int nFrames);
 
-		void ProcessTrack(std::vector<float>& trackInputBuffer, const TrackState::Track& track, unsigned int nFrames, unsigned int sampleRate);
-		void ProcessBus(const TrackState::Bus& bus, unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate);
+		void ProcessTrack(
+			std::vector<float>& trackInputBuffer, const std::shared_ptr<TrackState::Track>& track,
+			unsigned int nFrames, unsigned int sampleRate);
+		void ProcessBus(
+			const std::shared_ptr<TrackState::Bus>& bus,
+			unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate);
 	public:
 		unsigned int meterUpdateIntervalMS = 16;
 		unsigned int lookbackBufferIntervalMS = 100; // The amount of time the meter uses to average over
@@ -171,9 +181,9 @@ namespace DigiDAW::Core::Audio
 		void StartTestTone();
 		void EndTestTone();
 
-		const MixableInfo& GetMixableInfo(const TrackState::Mixable& mixable)
+		const MixableInfo& GetMixableInfo(const std::shared_ptr<TrackState::Mixable> mixable)
 		{
-			return mixableInfo[&mixable];
+			return mixableInfo[mixable.get()];
 		}
 
 		const MixableInfo& GetOutputInfo()

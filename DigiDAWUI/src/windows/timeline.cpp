@@ -6,21 +6,21 @@ namespace DigiDAW::UI::Windows
 		: Window(open)
 	{
 		this->state = state;
+
+		windowClass.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_AutoHideTabBar;
 	}
 
 	std::string Timeline::GetName()
 	{
-		return "Timeline";
+		return "##timeline";
 	}
 
 	void Timeline::Render()
 	{
-		if (open)
+		ImGui::SetNextWindowClass(&windowClass);
+		if (ImGui::Begin(GetName().c_str(), nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse))
 		{
-			if (ImGui::Begin(GetName().c_str(), &open))
-			{
-			}
-			ImGui::End();
 		}
+		ImGui::End();
 	}
 }

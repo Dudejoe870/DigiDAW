@@ -12,13 +12,14 @@ namespace DigiDAW::UI::Windows
 
 	std::string Timeline::GetName()
 	{
-		return "##timeline";
+		return "Timeline";
 	}
 
 	void Timeline::Render()
 	{
 		ImGui::SetNextWindowClass(&windowClass);
-		if (ImGui::Begin(GetName().c_str(), nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse))
+		if (ImGui::Begin(GetName().c_str(), nullptr, 
+			ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse))
 		{
 		}
 		ImGui::End();

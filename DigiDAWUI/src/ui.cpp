@@ -40,9 +40,6 @@ namespace DigiDAW::UI
 
         state = std::make_shared<UIState>(fontHeader1, fontHeader2, iconFont, audioEngine, "settings.ini");
 
-        // Load state from settings.ini
-        state->SetupStateFromSettings();
-
         settingsWindow = std::make_unique<Windows::Settings>(false, state);
 
         effectsChainWindow = std::make_unique<Windows::EffectsChain>(true, state);
@@ -80,7 +77,7 @@ namespace DigiDAW::UI
         ImGui::DockBuilderSetNodeSize(dockspace, size);
 
         ImGuiID mainId = dockspace;
-        ImGuiID bottomId = ImGui::DockBuilderSplitNode(mainId, ImGuiDir_Down, 0.32f, nullptr, &mainId);
+        ImGuiID bottomId = ImGui::DockBuilderSplitNode(mainId, ImGuiDir_Down, 0.30f, nullptr, &mainId);
         ImGuiID topId = ImGui::DockBuilderSplitNode(mainId, ImGuiDir_Up, 0.25f, nullptr, &mainId);
         ImGuiID bottomRightId = ImGui::DockBuilderSplitNode(bottomId, ImGuiDir_Right, 0.25f, nullptr, &bottomId);
 
@@ -143,10 +140,26 @@ namespace DigiDAW::UI
                             shouldExit = true;
                         ImGui::EndMenu();
                     }
+
                     if (ImGui::BeginMenu("Edit"))
                     {
                         if (ImGui::MenuItem("Settings"))
                             settingsWindow->open = true;
+                        ImGui::EndMenu();
+                    }
+
+                    if (ImGui::BeginMenu("View"))
+                    {
+                        ImGui::MenuItem(effectsChainWindow->GetName().c_str(), nullptr, &effectsChainWindow->open);
+                        ImGui::MenuItem(tracksWindow->GetName().c_str(), nullptr, &tracksWindow->open);
+                        ImGui::MenuItem(busesWindow->GetName().c_str(), nullptr, &busesWindow->open);
+                        ImGui::EndMenu();
+                    }
+
+                    if (ImGui::BeginMenu("Meters"))
+                    {
+                        if (ImGui::MenuItem("Reset All Clipping Indicators"))
+                            state->audioEngine->mixer.ResetClippingIndicators();
                         ImGui::EndMenu();
                     }
                     ImGui::EndMenuBar();

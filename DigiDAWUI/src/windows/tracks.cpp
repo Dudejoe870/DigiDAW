@@ -28,34 +28,56 @@ namespace DigiDAW::UI::Windows
 
             Util::DrawMixableControls("Track Name", state->audioEngine, track, state->audioMeterStyle, 6.0f);
 
-            // TODO: Draw Bus Outputs
+            ImGui::Button("Outputs", ImVec2(Util::channelStripWidth * 0.70f, 0.0f));
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 12.0f));
+            {
+                if (ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonLeft))
+                {
+                    // TODO: Draw Bus Outputs
+
+                    ImGui::TextUnformatted("Test test test test");
+                    ImGui::TextUnformatted("Test test test test");
+                    ImGui::TextUnformatted("Test test test test");
+                    ImGui::TextUnformatted("Test test test test");
+                    ImGui::TextUnformatted("Test test test test");
+                    ImGui::TextUnformatted("Test test test test");
+                    ImGui::TextUnformatted("Test test test test");
+                    ImGui::TextUnformatted("Test test test test");
+                    ImGui::EndPopup();
+                }
+            }
+            ImGui::PopStyleVar();
         }
         ImGui::EndVertical();
     }
 
 	void Tracks::Render()
 	{
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        if (open)
         {
-            if (ImGui::Begin(GetName().c_str(), &open, ImGuiWindowFlags_HorizontalScrollbar))
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
             {
-                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+                if (ImGui::Begin(GetName().c_str(), &open,
+                    ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoCollapse))
                 {
-                    ImGui::BeginHorizontal("##track_channel_strips", ImVec2(0.0f, 0.0f), 0.0f);
+                    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
                     {
-                        unsigned int trackIndex = 0;
-                        for (std::shared_ptr<Core::Audio::TrackState::Track>& track : state->audioEngine->trackState.GetAllTracks())
+                        ImGui::BeginHorizontal("##track_channel_strips", ImVec2(0.0f, 0.0f), 0.0f);
                         {
-                            RenderTrackChannelStrip("track" + trackIndex, track, trackIndex % 2 == 0);
-                            ++trackIndex;
+                            unsigned int trackIndex = 0;
+                            for (std::shared_ptr<Core::Audio::TrackState::Track>& track : state->audioEngine->trackState.GetAllTracks())
+                            {
+                                RenderTrackChannelStrip("track" + trackIndex, track, trackIndex % 2 == 0);
+                                ++trackIndex;
+                            }
                         }
+                        ImGui::EndHorizontal();
                     }
-                    ImGui::EndHorizontal();
+                    ImGui::PopStyleVar();
                 }
-                ImGui::PopStyleVar();
+                ImGui::End();
             }
-            ImGui::End();
+            ImGui::PopStyleVar();
         }
-        ImGui::PopStyleVar();
 	}
 }

@@ -23,7 +23,7 @@ namespace DigiDAW::UI
             ImVec4 highRangeColor = ImVec4(1.0f, 0.6f, 0.1f, 1.0f);
 
             // Dividing Line
-            float lineAlpha = 0.132f;
+            float lineAlpha = 0.161f;
 
             // Clip Indicator
             ImVec4 activeClipColor = ImVec4(1.0f, 0.3f, 0.3f, 1.0f);
@@ -33,9 +33,9 @@ namespace DigiDAW::UI
             bool segmented = true;
             bool rounded = true;
 
-            int lineSegments = 64;
+            int lineSegments = 8;
 
-            int stereoMeterSpacing = 3;
+            int stereoMeterSpacing = 1;
         };
 
         static float DecibelToPercentage(float decibel, float minimumDecibel = -60.0f, float maximumDecibel = 0.0f)
@@ -77,7 +77,7 @@ namespace DigiDAW::UI
 
         static float GetMeterLabelWidth(float minimumDecibel = -60.0f)
         {
-            return ImGui::CalcTextSize(fmt::format("{}dB", minimumDecibel).c_str()).x;
+            return ImGui::CalcTextSize(fmt::format("{}dB", minimumDecibel + 5).c_str()).x;
         }
 
         static const float audioMeterClipIndicatorHeight;

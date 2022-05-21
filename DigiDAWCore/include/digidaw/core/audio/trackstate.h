@@ -77,6 +77,12 @@ namespace DigiDAW::Core::Audio
 		{
 			// TODO: Other track specific features.
 
+			// TODO: Move these into the Bus struct as INPUTS. That makes it even more parallelizable, 
+			// (as we can just spin up a thread per Bus, 
+			// wait on the specified tracks to finish then accumulate them all and then apply gain / panning)
+			// AND it allows us to also do bus to bus inputs potentially. 
+			// That allows for the scenario that we don't have to wait on all the tracks to finish processing 
+			// before processing certain buses in parallel. Perhaps having a profound performance impact (in some situations)
 			std::vector<BusOutput> outputs;
 
 			Track()

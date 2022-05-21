@@ -17,7 +17,7 @@ namespace DigiDAW::UI::Windows
 	{
 		if (open)
 		{
-			if (ImGui::Begin(GetName().c_str(), &open))
+			if (ImGui::Begin(GetName().c_str(), &open, ImGuiWindowFlags_NoCollapse))
 			{
 
 			}

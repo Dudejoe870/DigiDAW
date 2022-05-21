@@ -222,7 +222,8 @@ namespace DigiDAW::UI::Windows
         {
             ImGui::SetNextWindowSize(ImVec2(1024.0f, 780.0f), ImGuiCond_Appearing);
             ImGui::SetNextWindowSizeConstraints(ImVec2(915.0f, 780.0f), ImVec2(10000000.0f, 10000000.0f));
-            if (ImGui::Begin(GetName().c_str(), &open, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse))
+            if (ImGui::Begin(GetName().c_str(), &open, 
+                ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse))
             {
                 if (ImGui::BeginTabBar("SettingsTabBar"))
                 {

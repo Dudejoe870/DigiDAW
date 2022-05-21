@@ -23,7 +23,25 @@ namespace DigiDAW::UI::Windows
 
             Util::DrawMixableControls("Bus Name", state->audioEngine, bus, state->audioMeterStyle, 6.0f);
 
-            // TODO: Draw Output Device Outputs
+            ImGui::Button("Outputs", ImVec2(Util::channelStripWidth * 0.70f, 0.0f));
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 12.0f));
+            {
+                if (ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonLeft))
+                {
+                    // TODO: Draw Output Device Outputs
+
+                    ImGui::TextUnformatted("Test test test test");
+                    ImGui::TextUnformatted("Test test test test");
+                    ImGui::TextUnformatted("Test test test test");
+                    ImGui::TextUnformatted("Test test test test");
+                    ImGui::TextUnformatted("Test test test test");
+                    ImGui::TextUnformatted("Test test test test");
+                    ImGui::TextUnformatted("Test test test test");
+                    ImGui::TextUnformatted("Test test test test");
+                    ImGui::EndPopup();
+                }
+            }
+            ImGui::PopStyleVar();
         }
         ImGui::EndVertical();
     }
@@ -34,7 +52,8 @@ namespace DigiDAW::UI::Windows
         {
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
             {
-                if (ImGui::Begin(GetName().c_str(), &open, ImGuiWindowFlags_HorizontalScrollbar))
+                if (ImGui::Begin(GetName().c_str(), &open, 
+                    ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoCollapse))
                 {
                     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
                     {
@@ -87,31 +106,39 @@ namespace DigiDAW::UI::Windows
 
                                             ImGui::BeginVertical("##audio_meter_v_layout", ImVec2(Util::channelStripWidth, 0.0f), 0.5f);
                                             {
-                                                // TODO: Add option to display more channels 
-                                                // (the output device can have way more channels than just 2)
-                                                const std::vector<Core::Audio::Mixer::ChannelInfo>& outputChannels =
-                                                    state->audioEngine->mixer.GetOutputInfo().channels;
-                                                if (outputChannels.size() > 0)
+                                                ImGui::BeginHorizontal("##center_on_audio_meter_layout");
                                                 {
-                                                    if (outputChannels.size() >= 2)
-                                                        Util::DrawAudioMeterStereo("##output_audio_meter_layout",
-                                                            Util::DecibelToPercentage(outputChannels[0].rms, 
-                                                                state->audioEngine->mixer.minimumDecibelLevel),
-                                                            Util::DecibelToPercentage(outputChannels[1].rms, 
-                                                                state->audioEngine->mixer.minimumDecibelLevel),
-                                                            Util::DecibelToPercentage(outputChannels[0].peak, 
-                                                                state->audioEngine->mixer.minimumDecibelLevel),
-                                                            Util::DecibelToPercentage(outputChannels[1].peak, 
-                                                                state->audioEngine->mixer.minimumDecibelLevel),
-                                                            false, false, state->audioMeterStyle);
-                                                    else
-                                                        Util::DrawAudioMeter("##output_audio_meter_layout",
-                                                            Util::DecibelToPercentage(outputChannels[0].rms, 
-                                                                state->audioEngine->mixer.minimumDecibelLevel),
-                                                            Util::DecibelToPercentage(outputChannels[0].peak, 
-                                                                state->audioEngine->mixer.minimumDecibelLevel),
-                                                            false, state->audioMeterStyle);
+                                                    ImGui::Dummy(ImVec2(Util::GetMeterLabelWidth(
+                                                        state->audioEngine->mixer.minimumDecibelLevel), 0.0f));
+
+                                                    // TODO: Add option to display more channels 
+                                                    // (the output device can have way more channels than just 2)
+                                                    const std::vector<Core::Audio::Mixer::ChannelInfo>& outputChannels =
+                                                        state->audioEngine->mixer.GetOutputInfo().channels;
+                                                    if (outputChannels.size() > 0)
+                                                    {
+                                                        if (outputChannels.size() >= 2)
+                                                            Util::DrawAudioMeterStereo("##output_audio_meter_layout",
+                                                                Util::DecibelToPercentage(outputChannels[0].rms,
+                                                                    state->audioEngine->mixer.minimumDecibelLevel),
+                                                                Util::DecibelToPercentage(outputChannels[1].rms,
+                                                                    state->audioEngine->mixer.minimumDecibelLevel),
+                                                                Util::DecibelToPercentage(outputChannels[0].peak,
+                                                                    state->audioEngine->mixer.minimumDecibelLevel),
+                                                                Util::DecibelToPercentage(outputChannels[1].peak,
+                                                                    state->audioEngine->mixer.minimumDecibelLevel),
+                                                                outputChannels[0].clip, 
+                                                                outputChannels[1].clip, state->audioMeterStyle);
+                                                        else
+                                                            Util::DrawAudioMeter("##output_audio_meter_layout",
+                                                                Util::DecibelToPercentage(outputChannels[0].rms,
+                                                                    state->audioEngine->mixer.minimumDecibelLevel),
+                                                                Util::DecibelToPercentage(outputChannels[0].peak,
+                                                                    state->audioEngine->mixer.minimumDecibelLevel),
+                                                                outputChannels[0].clip, state->audioMeterStyle);
+                                                    }
                                                 }
+                                                ImGui::EndHorizontal();
                                             }
                                             ImGui::EndVertical();
                                         }

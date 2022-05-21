@@ -35,11 +35,14 @@ namespace DigiDAW::Core::Audio
 		public:
 			float rms;
 			float peak;
+			bool clip;
 
 			ChannelInfo()
 			{
 				this->rms = -(float)INFINITY;
 				this->peak = -(float)INFINITY;
+
+				this->clip = false;
 			}
 		};
 
@@ -165,6 +168,8 @@ namespace DigiDAW::Core::Audio
 
 		void UpdateAllTrackBuffers();
 		void UpdateAllBusBuffers();
+
+		void ResetClippingIndicators();
 
 		void Mix(
 			float* outputBuffer,

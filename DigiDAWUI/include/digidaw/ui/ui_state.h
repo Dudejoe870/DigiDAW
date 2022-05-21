@@ -11,32 +11,92 @@ namespace DigiDAW::UI
 {
 	struct UIState
 	{
-        struct Style
+    private:
+        void ModifyStyle(ImGuiStyle& style, bool withBorder)
         {
-            std::string name;
-            ImGuiStyle guiStyle;
+            // Get rid of all transparency that can look weird when dragging a secondary window out of the main one.
+            style.WindowRounding = 0.0f;
+            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+            style.Colors[ImGuiCol_PopupBg].w = 1.0f;
+            style.Colors[ImGuiCol_TitleBgCollapsed].w = 1.0f;
 
-            Style(std::string name, ImGuiStyle& guiStyle)
+            for (int i = 0; i < ImGuiCol_COUNT; ++i)
             {
-                this->name = name;
-                this->guiStyle = guiStyle;
+                // Make all the channels grayscale.
+                float grayscale = (style.Colors[i].x + style.Colors[i].y + style.Colors[i].z) / 3.0f;
+                style.Colors[i].x = grayscale;
+                style.Colors[i].y = grayscale;
+                style.Colors[i].z = grayscale;
             }
-        };
 
-        std::vector<Style> styles;
+            style.Colors[ImGuiCol_Border] = ImVec4(0.0f, 0.0f, 0.0f, 0.5f);
 
-		ImFont* fontHeader1 = nullptr;
-		ImFont* fontHeader2 = nullptr;
-		ImFont* iconFont = nullptr;
+            const ImVec4 windowBg = style.Colors[ImGuiCol_WindowBg];
+            style.Colors[ImGuiCol_TableRowBg] = ImVec4(windowBg.x * 1.15f, windowBg.y * 1.15f, windowBg.z * 1.15f, 1.0f);
+            style.Colors[ImGuiCol_TableRowBgAlt] = ImVec4(windowBg.x * 0.95f, windowBg.y * 0.95f, windowBg.z * 0.95f, 1.0f);
 
-		std::shared_ptr<Core::Audio::Engine> audioEngine;
+            style.Colors[ImGuiCol_DockingPreview] = ImVec4(0.0f, 0.0f, 0.0f, 0.5f);
 
-		unsigned int currentStyle;
+            style.FrameRounding = 3.0f;
+            style.FrameBorderSize = (withBorder) ? 1.0f : 0.0f;
+            style.FramePadding = ImVec2(7.0f, 2.0f);
 
-		Util::AudioMeterStyle audioMeterStyle;
+            style.ItemSpacing = ImVec2(6.0f, 3.0f);
+            style.LayoutAlign = 0.0f;
 
-		mINI::INIFile settingsFile;
-		mINI::INIStructure settingsStructure;
+            style.TabRounding = 8.0f;
+            style.TabBorderSize = 0.0f;
+
+            style.GrabRounding = 8.0f;
+
+            // Align the Window title to the center, add window border, and no window collapse arrow.
+            // (double-click to collapse still works without the no collapse flag active per window)
+            style.WindowTitleAlign = ImVec2(0.5f, 0.5f);
+            style.WindowBorderSize = 1.0f;
+            style.WindowMenuButtonPosition = ImGuiDir_None;
+        }
+
+        void CreateLowContrastTheme(ImGuiStyle& style)
+        {
+            style.Colors[ImGuiCol_WindowBg] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
+            style.Colors[ImGuiCol_ChildBg] = style.Colors[ImGuiCol_WindowBg];
+
+            style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+            style.Colors[ImGuiCol_PopupBg] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
+
+            style.Colors[ImGuiCol_FrameBg] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+            style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
+            style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.65f, 0.65f, 0.65f, 1.0f);
+
+            style.Colors[ImGuiCol_Header] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+            style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
+            style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.65f, 0.65f, 0.65f, 1.0f);
+
+            style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
+            style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
+
+            style.Colors[ImGuiCol_CheckMark] = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
+
+            style.Colors[ImGuiCol_TitleBg] = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+            style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
+
+            style.Colors[ImGuiCol_Button] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+            style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.55f, 0.55f, 0.55f, 1.0f);
+            style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.65f, 0.65f, 0.65f, 1.0f);
+
+            style.Colors[ImGuiCol_Tab] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
+            style.Colors[ImGuiCol_TabActive] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+            style.Colors[ImGuiCol_TabHovered] = ImVec4(0.65f, 0.65f, 0.65f, 1.0f);
+            style.Colors[ImGuiCol_TabUnfocused] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
+            style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+
+            style.Colors[ImGuiCol_Text] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+
+            ModifyStyle(style, false);
+
+            const ImVec4 windowBg = style.Colors[ImGuiCol_WindowBg];
+            style.Colors[ImGuiCol_TableRowBg] = ImVec4(windowBg.x * 1.25f, windowBg.y * 1.25f, windowBg.z * 1.25f, 1.0f);
+        }
 
         unsigned int GetDeviceByName(std::string name)
         {
@@ -198,6 +258,33 @@ namespace DigiDAW::UI
 
             SaveSettings(); // Save all the current settings to the ini file (just incase we had to reset anything due to errors)
         }
+    public:
+        struct Style
+        {
+            std::string name;
+            ImGuiStyle guiStyle;
+
+            Style(std::string name, ImGuiStyle& guiStyle)
+            {
+                this->name = name;
+                this->guiStyle = guiStyle;
+            }
+        };
+
+        std::vector<Style> styles;
+
+		ImFont* fontHeader1 = nullptr;
+		ImFont* fontHeader2 = nullptr;
+		ImFont* iconFont = nullptr;
+
+		std::shared_ptr<Core::Audio::Engine> audioEngine;
+
+		unsigned int currentStyle;
+
+		Util::AudioMeterStyle audioMeterStyle;
+
+		mINI::INIFile settingsFile;
+		mINI::INIStructure settingsStructure;
 
         void SaveSettings()
         {
@@ -236,89 +323,6 @@ namespace DigiDAW::UI
             settingsFile.write(settingsStructure); // Write the settings to the ini file.
         }
 
-        void ModifyStyle(ImGuiStyle& style, bool withBorder)
-        {
-            // Get rid of all transparency that can look weird when dragging a secondary window out of the main one.
-            style.WindowRounding = 0.0f;
-            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-            style.Colors[ImGuiCol_TitleBgCollapsed].w = 1.0f;
-
-            for (int i = 0; i < ImGuiCol_COUNT; ++i)
-            {
-                // Make all the channels grayscale.
-                float grayscale = (style.Colors[i].x + style.Colors[i].y + style.Colors[i].z) / 3.0f;
-                style.Colors[i].x = grayscale;
-                style.Colors[i].y = grayscale;
-                style.Colors[i].z = grayscale;
-            }
-
-            style.Colors[ImGuiCol_Border] = ImVec4(0.0f, 0.0f, 0.0f, 0.5f);
-
-            const ImVec4 windowBg = style.Colors[ImGuiCol_WindowBg];
-            style.Colors[ImGuiCol_TableRowBg] = ImVec4(windowBg.x * 1.15f, windowBg.y * 1.15f, windowBg.z * 1.15f, 1.0f);
-            style.Colors[ImGuiCol_TableRowBgAlt] = ImVec4(windowBg.x * 0.95f, windowBg.y * 0.95f, windowBg.z * 0.95f, 1.0f);
-
-            style.FrameRounding = 3.0f;
-            style.FrameBorderSize = (withBorder) ? 1.0f : 0.0f;
-            style.FramePadding = ImVec2(7.0f, 2.0f);
-
-            style.ItemSpacing = ImVec2(6.0f, 3.0f);
-            style.LayoutAlign = 0.0f;
-
-            style.TabRounding = 8.0f;
-            style.TabBorderSize = 0.0f;
-
-            style.GrabRounding = 8.0f;
-
-            // Align the Window title to the center, add window border, and no window collapse arrow.
-            // (double-click to collapse still works without the no collapse flag active per window)
-            style.WindowTitleAlign = ImVec2(0.5f, 0.5f);
-            style.WindowBorderSize = 1.0f;
-            style.WindowMenuButtonPosition = ImGuiDir_None;
-        }
-
-        void CreateLowContrastTheme(ImGuiStyle& style)
-        {
-            style.Colors[ImGuiCol_WindowBg] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
-            style.Colors[ImGuiCol_ChildBg] = style.Colors[ImGuiCol_WindowBg];
-
-            style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
-            style.Colors[ImGuiCol_PopupBg] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
-
-            style.Colors[ImGuiCol_FrameBg] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
-            style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
-            style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.65f, 0.65f, 0.65f, 1.0f);
-
-            style.Colors[ImGuiCol_Header] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
-            style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
-            style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.65f, 0.65f, 0.65f, 1.0f);
-
-            style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
-            style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
-
-            style.Colors[ImGuiCol_CheckMark] = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
-
-            style.Colors[ImGuiCol_TitleBg] = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
-            style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
-
-            style.Colors[ImGuiCol_Button] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
-            style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.55f, 0.55f, 0.55f, 1.0f);
-            style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.65f, 0.65f, 0.65f, 1.0f);
-
-            style.Colors[ImGuiCol_Tab] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
-            style.Colors[ImGuiCol_TabActive] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
-            style.Colors[ImGuiCol_TabHovered] = ImVec4(0.65f, 0.65f, 0.65f, 1.0f);
-            style.Colors[ImGuiCol_TabUnfocused] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
-            style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
-
-            style.Colors[ImGuiCol_Text] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
-
-            ModifyStyle(style, false);
-
-            const ImVec4 windowBg = style.Colors[ImGuiCol_WindowBg];
-            style.Colors[ImGuiCol_TableRowBg] = ImVec4(windowBg.x * 1.25f, windowBg.y * 1.25f, windowBg.z * 1.25f, 1.0f);
-        }
-
 		UIState(ImFont* fontHeader1, ImFont* fontHeader2, ImFont* iconFont, std::shared_ptr<Core::Audio::Engine>& audioEngine, const std::string& iniFilename)
             : settingsFile(iniFilename)
         {
@@ -348,6 +352,8 @@ namespace DigiDAW::UI
                 Style("Low Contrast Light", lowContrastLightStyle),
                 Style("High Contrast Light", highContrastLightStyle)
             };
+
+            SetupStateFromSettings();
 		}
 	};
 }

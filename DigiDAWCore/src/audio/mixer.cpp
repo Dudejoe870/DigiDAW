@@ -97,6 +97,10 @@ namespace DigiDAW::Core::Audio
 										(float)deltaTime,
 										(float)meterPeakRiseTimeMS, (float)meterPeakFallTimeMS,
 										minimumDecibelLevel);
+
+									bool& clip = mixableInfo[bus.get()].channels[channel].clip;
+									if (!clip)
+										clip = mixableInfo[bus.get()].channels[channel].peak >= 0.0f;
 								}
 							}
 						}
@@ -124,6 +128,10 @@ namespace DigiDAW::Core::Audio
 										(float)deltaTime,
 										(float)meterPeakRiseTimeMS, (float)meterPeakFallTimeMS,
 										minimumDecibelLevel);
+
+									bool& clip = mixableInfo[track.get()].channels[channel].clip;
+									if (!clip)
+										clip = mixableInfo[track.get()].channels[channel].peak >= 0.0f;
 								}
 							}
 						}
@@ -149,6 +157,10 @@ namespace DigiDAW::Core::Audio
 									(float)deltaTime,
 									(float)meterPeakRiseTimeMS, (float)meterPeakFallTimeMS,
 									minimumDecibelLevel);
+
+								bool& clip = outputInfo.channels[channel].clip;
+								if (!clip)
+									clip = outputInfo.channels[channel].peak >= 0.0f;
 							}
 						}
 					}
@@ -264,6 +276,19 @@ namespace DigiDAW::Core::Audio
 			nFrames, static_cast<unsigned int>(bus->nChannels), sampleRate);
 	}
 
+	void Mixer::ResetClippingIndicators()
+	{
+		for (auto& pair : mixableInfo)
+		{
+			MixableInfo& info = pair.second;
+			for (ChannelInfo& channel : info.channels)
+				channel.clip = false;
+		}
+
+		for (ChannelInfo& channel : outputInfo.channels)
+			channel.clip = false;
+	}
+
 	void Mixer::Mix(
 		float* outputBuffer,
 		float* inputBuffer, 
@@ -301,16 +326,20 @@ namespace DigiDAW::Core::Audio
 				trackInfo[track.get()].processAsync = trackThreads.Queue(
 					[&]()
 					{
+						//thread_local static std::random_device rd; // For debugging
+						//thread_local static std::mt19937 rng(rd()); // For debugging
+						//thread_local std::uniform_real_distribution<float> urd(0.0f, 1.0f); // For debugging
+
 						// Currently we'll use silence for track inputs
 						std::vector<float> trackInput(static_cast<std::size_t>(track->nChannels) * nFrames);
 						for (unsigned int channel = 0; channel < static_cast<unsigned int>(track->nChannels); ++channel)
 						{
 							for (unsigned int frame = 0; frame < nFrames; ++frame)
 							{
-								//trackInput[(channel * nFrames) + frame] = ((float)rand() / RAND_MAX) + 1.0f; // For debugging (Fix this, not thread-safe, causes weird artifacts)
+								//trackInput[(channel * nFrames) + frame] = urd(rng); // For debugging
 								
 								//double sampleTime = (time + (static_cast<double>(frame) / static_cast<double>(sampleRate))); // For debugging
-								//trackInput[(channel * nFrames) + frame] = (std::cosf(2 * pi * 440.0 * sampleTime) * 0.5f) + 0.5f; // For debugging
+								//trackInput[(channel * nFrames) + frame] = (std::cosf(2.0f * pi<float> * 440.0f * sampleTime) * 0.5f) + 0.5f; // For debugging
 
 								trackInput[(channel * nFrames) + frame] = 0.0f;
 							}

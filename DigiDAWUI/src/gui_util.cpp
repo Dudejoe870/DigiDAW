@@ -12,7 +12,7 @@
 namespace DigiDAW::UI
 {
     const float Util::audioMeterClipIndicatorHeight = 6.0f;
-    const float Util::audioMeterHeight = 220.0f;
+    const float Util::audioMeterHeight = 200.0f;
     const float Util::audioMeterFullHeight = audioMeterHeight + audioMeterClipIndicatorHeight;
 
     const float Util::channelStripWidth = 140.0f;
@@ -49,7 +49,7 @@ namespace DigiDAW::UI
         const AudioMeterStyle& audioMeterStyle)
     {
         const float maxLowRange = 0.5f;
-        const float maxMidRange = 0.7f;
+        const float maxMidRange = 0.75f;
         const float deactiveClipAlpha = 0.2f;
 
         ImGuiWindow* window = ImGui::GetCurrentWindow();
@@ -227,7 +227,7 @@ namespace DigiDAW::UI
                 DrawAudioMeter("##audio_meter_layout",
                     DecibelToPercentage(mixableInfo.channels[0].rms, audioEngine->mixer.minimumDecibelLevel),
                     DecibelToPercentage(mixableInfo.channels[0].peak, audioEngine->mixer.minimumDecibelLevel),
-                        false, audioMeterStyle);
+                        mixableInfo.channels[0].clip, audioMeterStyle);
             }
             else if (mixableInfo.channels.size() == 2)
             {
@@ -236,7 +236,8 @@ namespace DigiDAW::UI
                     DecibelToPercentage(mixableInfo.channels[1].rms, audioEngine->mixer.minimumDecibelLevel),
                     DecibelToPercentage(mixableInfo.channels[0].peak, audioEngine->mixer.minimumDecibelLevel),
                     DecibelToPercentage(mixableInfo.channels[1].peak, audioEngine->mixer.minimumDecibelLevel),
-                        false, false, audioMeterStyle);
+                        mixableInfo.channels[0].clip, 
+                        mixableInfo.channels[1].clip, audioMeterStyle);
             }
         }
         ImGui::EndHorizontal();

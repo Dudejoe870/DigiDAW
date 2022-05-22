@@ -17,7 +17,7 @@ namespace DigiDAW::Core::Audio
 	 * |
 	 * track buffer (this is where gain is applied and panning if it's a stereo track)
 	 * |
-	 * channel output buffer 
+	 * bus input buffer 
 	 * (this is apart of the track -> bus channel mapping system, 
 	 * which allows any channel on the track to be mapped to any number of bus channels. 
 	 * Panning gets applied here instead if this is a mono track with a stereo output)
@@ -53,6 +53,7 @@ namespace DigiDAW::Core::Audio
 		private:
 			std::vector<std::vector<float>> lookbackBuffers; // The lookback buffers that are used to calculate the amplitudes used for metering.
 			std::mutex lookbackBufferMutex;
+			std::future<void> processAsync;
 		public:
 			MixableInfo()
 			{
@@ -85,19 +86,22 @@ namespace DigiDAW::Core::Audio
 		struct TrackInfo
 		{
 			MixBuffer mainTrackBuffer;
-			std::vector<std::vector<MixBuffer>> busOutputBuffers;
-			std::future<void> processAsync;
 
 			TrackInfo()
 			{
 			}
 
-			TrackInfo(Engine& audioEngine, const std::shared_ptr<TrackState::Track>& track, unsigned int nFrames);
+			TrackInfo(const std::shared_ptr<TrackState::Track>& track, unsigned int nFrames)
+			{
+				this->mainTrackBuffer = MixBuffer(nFrames, static_cast<unsigned int>(track->nChannels));
+			}
 		};
 
 		struct BusInfo
 		{
 			MixBuffer mainBusBuffer;
+			std::vector<std::vector<MixBuffer>> trackInputBuffers;
+			std::vector<std::vector<MixBuffer>> busInputBuffers;
 
 			BusInfo()
 			{
@@ -106,6 +110,32 @@ namespace DigiDAW::Core::Audio
 			BusInfo(const std::shared_ptr<TrackState::Bus>& bus, unsigned int nFrames)
 			{
 				this->mainBusBuffer = MixBuffer(nFrames, static_cast<unsigned int>(bus->nChannels));
+
+				// Each channel of the track associated with this input has a mapping to the channels of this bus
+				for (unsigned int input = 0; input < bus->trackInputs.size(); ++input)
+				{
+					const TrackState::TrackInput& trackInput = bus->trackInputs[input];
+					std::vector<MixBuffer> channelBuffers;
+
+					// Loop through each channel in the track and allocate the channel buffer for that input
+					for (unsigned int channel = 0; channel < static_cast<unsigned int>(trackInput.track->nChannels); ++channel)
+						channelBuffers.push_back(MixBuffer(nFrames, trackInput.trackToBusMap.mapping[channel].size()));
+
+					trackInputBuffers.push_back(channelBuffers);
+				}
+
+				// Each channel of the source bus associated with this input has a mapping to the channels of this bus
+				for (unsigned int input = 0; input < bus->busInputs.size(); ++input)
+				{
+					const TrackState::BusInput& busInput = bus->busInputs[input];
+					std::vector<MixBuffer> channelBuffers;
+
+					// Loop through each chanel in the source bus and allocate the channel buffer for that input
+					for (unsigned int channel = 0; channel < static_cast<unsigned int>(busInput.bus->nChannels); ++channel)
+						channelBuffers.push_back(MixBuffer(nFrames, busInput.busToBusMap.mapping[channel].size()));
+
+					busInputBuffers.push_back(channelBuffers);
+				}
 			}
 		};
 
@@ -120,6 +150,9 @@ namespace DigiDAW::Core::Audio
 		std::jthread mixerThread;
 
 		Threading::ThreadPool trackThreads;
+		Threading::ThreadPool busThreads;
+
+		std::mutex audioProcessingMutex;
 
 		// Basically this is an asymmetrical Lerp, where the speed varies 
 		// depending on if the target value is higher than the current value, or lower.

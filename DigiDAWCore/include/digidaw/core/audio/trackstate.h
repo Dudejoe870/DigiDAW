@@ -18,16 +18,39 @@ namespace DigiDAW::Core::Audio
 		};
 
 		struct Bus;
+		struct Track;
 
-		struct BusOutput
+		struct ChannelMapping
+		{
+			std::vector<std::vector<unsigned int>> mapping;
+
+			ChannelMapping(const std::vector<std::vector<unsigned int>>& mapping)
+			{
+				this->mapping = mapping;
+			}
+		};
+
+		struct TrackInput
+		{
+			std::shared_ptr<Track> track;
+			ChannelMapping trackToBusMap;
+
+			TrackInput(std::shared_ptr<Track>& track, const ChannelMapping& trackToBusMap)
+				: trackToBusMap(trackToBusMap)
+			{
+				this->track = track;
+			}
+		};
+
+		struct BusInput
 		{
 			std::shared_ptr<Bus> bus;
-			std::vector<std::vector<unsigned int>> inputChannelToOutputChannels;
+			ChannelMapping busToBusMap;
 
-			BusOutput(std::shared_ptr<Bus>& bus, const std::vector<std::vector<unsigned int>>& outputChannels)
+			BusInput(std::shared_ptr<Bus>& bus, const ChannelMapping& busToBusMap)
+				: busToBusMap(busToBusMap)
 			{
 				this->bus = bus;
-				this->inputChannelToOutputChannels = outputChannels;
 			}
 		};
 
@@ -66,7 +89,7 @@ namespace DigiDAW::Core::Audio
 		 * AND act as a way to organize groups of tracks (for example, you could have a bus specifically for drums, 
 		 * or a stereo setup for recording Piano, etc.) Which is a little different to how other DAWs work, 
 		 * as aux tracks are usually what you use to group tracks together, and secondary buses usually output to the main bus, 
-		 * while in this case, buses can only output to the main output device. 
+		 * while in this case, buses can only output to the main output device + other buses. 
 		 * As such it's easier to understand the relationship between different types of "Mixables", 
 		 * and is more straightforward to organize things (In combination with Track folders).
 		 */
@@ -77,22 +100,13 @@ namespace DigiDAW::Core::Audio
 		{
 			// TODO: Other track specific features.
 
-			// TODO: Move these into the Bus struct as INPUTS. That makes it even more parallelizable, 
-			// (as we can just spin up a thread per Bus, 
-			// wait on the specified tracks to finish then accumulate them all and then apply gain / panning)
-			// AND it allows us to also do bus to bus inputs potentially. 
-			// That allows for the scenario that we don't have to wait on all the tracks to finish processing 
-			// before processing certain buses in parallel. Perhaps having a profound performance impact (in some situations)
-			std::vector<BusOutput> outputs;
-
 			Track()
 			{
 			}
 
-			Track(const std::string& name, ChannelNumber nChannels, float gain, float pan, const std::vector<BusOutput>& outputs)
+			Track(const std::string& name, ChannelNumber nChannels, float gain, float pan)
 				: Mixable(name, nChannels, gain, pan)
 			{
-				this->outputs = outputs;
 			}
 		};
 
@@ -100,21 +114,55 @@ namespace DigiDAW::Core::Audio
 		// current output device / buffer (if exporting) when specified.
 		struct Bus : Mixable
 		{
+			std::vector<TrackInput> trackInputs;
+			std::vector<BusInput> busInputs;
+
 			std::vector<std::vector<unsigned int>> busChannelToDeviceOutputChannels;
+
+			bool CheckCircularBusDependency(std::shared_ptr<Bus> otherBus)
+			{
+				for (const BusInput& input : otherBus->busInputs)
+				{
+					if (input.bus.get() == this)
+						return true;
+					// Check that the other bus doesn't also have a track that we have as an input.
+					for (const TrackInput& sourceTrackInput : input.bus->trackInputs)
+						for (const TrackInput& destTrackInput : trackInputs)
+							if (sourceTrackInput.track == destTrackInput.track) 
+								return true;
+				}
+				return false;
+			}
+
+			void ValidateAndRemoveInvalidInputs()
+			{
+				std::erase_if(busInputs, 
+					[this](const BusInput& input) { return CheckCircularBusDependency(input.bus); });
+			}
 
 			Bus()
 			{
 			}
 
-			Bus(const std::string& name, ChannelNumber nChannels, float gain, float pan, const std::vector<std::vector<unsigned int>>& deviceOutputs)
+			Bus(const std::string& name, ChannelNumber nChannels, float gain, float pan, 
+				const std::vector<std::vector<unsigned int>>& deviceOutputs,
+				const std::vector<TrackInput>& trackInputs,
+				const std::vector<BusInput>& busInputs)
 				: Mixable(name, nChannels, gain, pan)
 			{
 				this->busChannelToDeviceOutputChannels = deviceOutputs;
+				this->trackInputs = trackInputs;
+				this->busInputs = busInputs;
+
+				ValidateAndRemoveInvalidInputs();
 			}
 		};
 	private:
 		std::vector<std::shared_ptr<Track>> currentTracks;
 		std::vector<std::shared_ptr<Bus>> currentBuses;
+
+		std::mutex tracksMutex;
+		std::mutex busesMutex;
 	public:
 		std::vector<std::function<void(std::shared_ptr<Track>)>> addTrackCallbacks;
 		std::vector<std::function<void(std::shared_ptr<Track>)>> removeTrackCallbacks;
@@ -125,8 +173,8 @@ namespace DigiDAW::Core::Audio
 		std::shared_ptr<Track> AddTrack(Track track);
 		std::shared_ptr<Bus> AddBus(Bus bus);
 
-		void RemoveTrack(std::shared_ptr<Track> track);
-		void RemoveBus(std::shared_ptr<Bus> bus);
+		void RemoveTrack(std::shared_ptr<Track>& track);
+		void RemoveBus(std::shared_ptr<Bus>& bus);
 
 		std::vector<std::shared_ptr<TrackState::Track>>& GetAllTracks()
 		{
@@ -136,6 +184,18 @@ namespace DigiDAW::Core::Audio
 		std::vector<std::shared_ptr<TrackState::Bus>>& GetAllBuses()
 		{
 			return currentBuses;
+		}
+
+		const std::vector<std::shared_ptr<TrackState::Track>> ThreadedCopyAllTracks()
+		{
+			std::lock_guard<std::mutex> lock(tracksMutex);
+			return std::vector<std::shared_ptr<TrackState::Track>>(currentTracks);
+		}
+
+		const std::vector<std::shared_ptr<TrackState::Bus>> ThreadedCopyAllBuses()
+		{
+			std::lock_guard<std::mutex> lock(busesMutex);
+			return std::vector<std::shared_ptr<TrackState::Bus>>(currentBuses);
 		}
 	};
 }

@@ -5,24 +5,6 @@
 
 namespace DigiDAW::Core::Audio
 {
-	Mixer::TrackInfo::TrackInfo(Engine& audioEngine, const std::shared_ptr<TrackState::Track>& track, unsigned int nFrames)
-	{
-		this->mainTrackBuffer = MixBuffer(audioEngine.GetCurrentBufferSize(), static_cast<unsigned int>(track->nChannels));
-
-		// Each channel of this track has a mapping to the input channels of each bus it sends out to
-		for (unsigned int output = 0; output < track->outputs.size(); ++output)
-		{
-			const TrackState::BusOutput& busOutput = track->outputs[output];
-			std::vector<MixBuffer> channelBuffers;
-
-			// Loop through each channel in the track and allocate the channel buffer for that output
-			for (unsigned int channel = 0; channel < static_cast<unsigned int>(track->nChannels); ++channel)
-				channelBuffers.push_back(MixBuffer(nFrames, busOutput.inputChannelToOutputChannels[channel].size()));
-
-			busOutputBuffers.push_back(channelBuffers);
-		}
-	}
-
 	Mixer::Mixer(Engine& audioEngine) 
 		: audioEngine(audioEngine)
 	{
@@ -33,11 +15,13 @@ namespace DigiDAW::Core::Audio
 		audioEngine.trackState.addTrackCallbacks.push_back(
 			[&](std::shared_ptr<TrackState::Track> track) 
 			{
-				trackInfo[track.get()] = TrackInfo(audioEngine, track, audioEngine.GetCurrentBufferSize());
+				std::lock_guard<std::mutex> lock(audioProcessingMutex); // Make sure we aren't currently using the data.
+				trackInfo[track.get()] = TrackInfo(track, audioEngine.GetCurrentBufferSize());
 			});
 		audioEngine.trackState.removeTrackCallbacks.push_back(
 			[&](std::shared_ptr<TrackState::Track> track)
 			{
+				std::lock_guard<std::mutex> lock(audioProcessingMutex);
 				trackInfo.erase(track.get());
 				mixableInfo.erase(track.get());
 			});
@@ -45,11 +29,13 @@ namespace DigiDAW::Core::Audio
 		audioEngine.trackState.addBusCallbacks.push_back(
 			[&](std::shared_ptr<TrackState::Bus> bus)
 			{
+				std::lock_guard<std::mutex> lock(audioProcessingMutex);
 				busInfo[bus.get()] = BusInfo(bus, audioEngine.GetCurrentBufferSize());
 			});
 		audioEngine.trackState.removeBusCallbacks.push_back(
 			[&](std::shared_ptr<TrackState::Bus> bus)
 			{
+				std::lock_guard<std::mutex> lock(audioProcessingMutex);
 				busInfo.erase(bus.get());
 				mixableInfo.erase(bus.get());
 			});
@@ -57,9 +43,6 @@ namespace DigiDAW::Core::Audio
 		mixerThread = std::jthread(
 			[&]()
 			{
-				const std::vector<std::shared_ptr<TrackState::Track>>& tracks = audioEngine.trackState.GetAllTracks();
-				const std::vector<std::shared_ptr<TrackState::Bus>>& buses = audioEngine.trackState.GetAllBuses();
-
 				std::vector<float> rmsBuffer;
 				std::vector<float> peakBuffer;
 
@@ -68,6 +51,10 @@ namespace DigiDAW::Core::Audio
 
 				while (running)
 				{
+					// Copy tracks and buses to new vectors just incase any changes are made on a separate thread during processing.
+					const std::vector<std::shared_ptr<TrackState::Track>> tracks = audioEngine.trackState.ThreadedCopyAllTracks();
+					const std::vector<std::shared_ptr<TrackState::Bus>> buses = audioEngine.trackState.ThreadedCopyAllBuses();
+
 					currentTime = std::chrono::high_resolution_clock::now();
 					unsigned long long deltaTime = std::chrono::duration_cast<std::chrono::milliseconds>(
 						std::chrono::duration<double>(currentTime - lastTime)).count();
@@ -183,7 +170,7 @@ namespace DigiDAW::Core::Audio
 		trackInfo.clear();
 
 		for (const std::shared_ptr<TrackState::Track>& track : tracks)
-			trackInfo[track.get()] = TrackInfo(audioEngine, track, audioEngine.GetCurrentBufferSize());
+			trackInfo[track.get()] = TrackInfo(track, audioEngine.GetCurrentBufferSize());
 	}
 
 	void Mixer::UpdateAllBusBuffers()
@@ -222,8 +209,6 @@ namespace DigiDAW::Core::Audio
 		std::vector<float>& trackInputBuffer, const std::shared_ptr<TrackState::Track>& track,
 		unsigned int nFrames, unsigned int sampleRate)
 	{
-		if (track->outputs.empty()) return;
-
 		if (!trackInfo.contains(track.get())) return;
 		std::vector<float>& trackBuffer = trackInfo[track.get()].mainTrackBuffer.buffer;
 		if (trackBuffer.empty()) return;
@@ -254,6 +239,109 @@ namespace DigiDAW::Core::Audio
 		unsigned int nFrames, unsigned int nOutChannels, unsigned int sampleRate)
 	{
 		if (bus->busChannelToDeviceOutputChannels.empty()) return;
+
+		// Note: These two loops do essentially the same thing
+		// just on different structs. We could use polymorphism, but then you'd probably have 
+		// to do a reinterpret_cast and get a little funky with it. And I think it's fairly easy 
+		// to understand with this code, just a little repetitive.
+
+		// Process all the track inputs
+		for (unsigned int input = 0; input < bus->trackInputs.size(); ++input)
+		{
+			const TrackState::TrackInput& trackInput = bus->trackInputs[input];
+			mixableInfo[trackInput.track.get()].processAsync.wait(); // Wait for the specified track to finish processing.
+
+			// Loop through each channel in the track to get its corresponding outputs to the bus
+			for (unsigned int channel = 0; channel < static_cast<unsigned int>(trackInput.track->nChannels); ++channel)
+			{
+				if (trackInput.trackToBusMap.mapping[channel].empty()) continue;
+
+				// Copy the track buffer to this buffer
+				// for expanding the amount of channels that the track has to the amount of channels of the bus
+				// so that we can apply panning to Mono tracks.
+				std::vector<float>& channelInputBuffer = busInfo[bus.get()].trackInputBuffers[input][channel].buffer;
+				for (unsigned int inChannel = 0; inChannel < static_cast<unsigned int>(
+					trackInput.trackToBusMap.mapping[channel].size()); ++inChannel)
+					Detail::SimdHelper::CopyBuffer(
+						trackInfo[trackInput.track.get()].mainTrackBuffer.buffer.data(),
+						channelInputBuffer.data(),
+						channel * nFrames, inChannel * nFrames, nFrames);
+
+				// TODO: Support Surround Panning
+				// Apply panning (for panning Mono tracks to Stereo buses)
+				if (trackInput.trackToBusMap.mapping[channel].size() == static_cast<std::size_t>(TrackState::ChannelNumber::Stereo)
+					&& trackInput.track->nChannels == TrackState::ChannelNumber::Mono)
+					ApplyStereoPanning(trackInput.track->pan, channelInputBuffer,
+						trackInput.trackToBusMap.mapping[channel].size(),
+						nFrames);
+
+				// Go through each output for this track channel (one track channel -> multiple bus channel mapping)
+				unsigned int trackChannel = 0;
+				for (unsigned int busChannel : trackInput.trackToBusMap.mapping[channel])
+				{
+					// Finally, pass the track output to the bus buffer as the input
+					std::vector<float>& busOutputBuffer = busInfo[bus.get()].mainBusBuffer.buffer;
+
+					// busOutputBuffer[busChannel] += channelOutputBuffer[trackChannel]
+					Detail::SimdHelper::AccumulateBuffer(
+						channelInputBuffer.data(),
+						busOutputBuffer.data(),
+						trackChannel * nFrames, busChannel * nFrames,
+						nFrames);
+
+					++trackChannel;
+				}
+			}
+		}
+
+		// Process all Bus inputs
+		for (unsigned int input = 0; input < bus->busInputs.size(); ++input)
+		{
+			const TrackState::BusInput& busInput = bus->busInputs[input];
+			mixableInfo[busInput.bus.get()].processAsync.wait(); // Wait for the specified bus to finish processing.
+
+			// Loop through each channel in the source bus to get its corresponding outputs to this bus
+			for (unsigned int channel = 0; channel < static_cast<unsigned int>(busInput.bus->nChannels); ++channel)
+			{
+				if (busInput.busToBusMap.mapping[channel].empty()) continue;
+
+				// Copy the bus buffer to this buffer
+				// for expanding the amount of channels that the bus has to the amount of channels of the bus
+				// so that we can apply panning to Mono buses.
+				std::vector<float>& channelInputBuffer = busInfo[bus.get()].busInputBuffers[input][channel].buffer;
+				for (unsigned int inChannel = 0; inChannel < static_cast<unsigned int>(
+					busInput.busToBusMap.mapping[channel].size()); ++inChannel)
+					Detail::SimdHelper::CopyBuffer(
+						busInfo[busInput.bus.get()].mainBusBuffer.buffer.data(),
+						channelInputBuffer.data(),
+						channel * nFrames, inChannel * nFrames, nFrames);
+
+				// TODO: Support Surround Panning
+				// Apply panning (for panning Mono tracks to Stereo buses)
+				if (busInput.busToBusMap.mapping[channel].size() == static_cast<std::size_t>(TrackState::ChannelNumber::Stereo)
+					&& busInput.bus->nChannels == TrackState::ChannelNumber::Mono)
+					ApplyStereoPanning(busInput.bus->pan, channelInputBuffer,
+						busInput.busToBusMap.mapping[channel].size(),
+						nFrames);
+
+				// Go through each output for this track channel (one track channel -> multiple bus channel mapping)
+				unsigned int srcChannel = 0;
+				for (unsigned int dstChannel : busInput.busToBusMap.mapping[channel])
+				{
+					// Finally, pass the bus output to the destination bus buffer as the input
+					std::vector<float>& busOutputBuffer = busInfo[bus.get()].mainBusBuffer.buffer;
+
+					// busOutputBuffer[busChannel] += channelOutputBuffer[trackChannel]
+					Detail::SimdHelper::AccumulateBuffer(
+						channelInputBuffer.data(),
+						busOutputBuffer.data(),
+						srcChannel * nFrames, dstChannel * nFrames,
+						nFrames);
+
+					++srcChannel;
+				}
+			}
+		}
 
 		if (!busInfo.contains(bus.get())) return;
 		std::vector<float>& busBuffer = busInfo[bus.get()].mainBusBuffer.buffer;
@@ -300,11 +388,14 @@ namespace DigiDAW::Core::Audio
 
 		currentTime = time;
 
-		const std::vector<std::shared_ptr<TrackState::Track>>& tracks = audioEngine.trackState.GetAllTracks();
-		const std::vector<std::shared_ptr<TrackState::Bus>>& buses = audioEngine.trackState.GetAllBuses();
+		// Copy tracks and buses to new vectors just incase any changes are made on a separate thread during processing.
+		const std::vector<std::shared_ptr<TrackState::Track>> tracks = audioEngine.trackState.ThreadedCopyAllTracks();
+		const std::vector<std::shared_ptr<TrackState::Bus>> buses = audioEngine.trackState.ThreadedCopyAllBuses();
 
 		if (!doTestTone)
 		{
+			std::lock_guard<std::mutex> lock(audioProcessingMutex);
+
 			// Zero out bus buffers
 			for (const std::shared_ptr<TrackState::Bus>& bus : buses)
 				Detail::SimdHelper::SetBuffer(busInfo[bus.get()].mainBusBuffer.buffer.data(), 0.0f,
@@ -323,7 +414,7 @@ namespace DigiDAW::Core::Audio
 				// Of course this'd be slower than doing it completely parallel, 
 				// but it's necessary since the track being sent to would depend 
 				// on the other track to finish processing.
-				trackInfo[track.get()].processAsync = trackThreads.Queue(
+				mixableInfo[track.get()].processAsync = trackThreads.Queue(
 					[&]()
 					{
 						//thread_local static std::random_device rd; // For debugging
@@ -348,63 +439,22 @@ namespace DigiDAW::Core::Audio
 					});
 			}
 
-			// Send tracks to bus outputs
-			for (const std::shared_ptr<TrackState::Track>& track : tracks)
-			{
-				// Wait for this tracks thread to finish.
-				trackInfo[track.get()].processAsync.wait();
-
-				// Send out to buses by looping through all the bus outputs 
-				// each channel of this track has a mapping to the input channels of each bus it sends out to
-				for (unsigned int output = 0; output < track->outputs.size(); ++output)
-				{
-					TrackState::BusOutput busOutput = track->outputs[output];
-
-					// Loop through each channel in the track to get it's corresponding outputs to the bus
-					for (unsigned int channel = 0; channel < static_cast<unsigned int>(track->nChannels); ++channel)
-					{
-						// Copy the track buffer to this buffer
-						// for expanding the amount of channels to the amount of channels we are sending to the bus
-						// so that we can apply panning to Mono tracks.
-						std::vector<float>& channelOutputBuffer = trackInfo[track.get()].busOutputBuffers[output][channel].buffer;
-						for (unsigned int outChannel = 0; outChannel < static_cast<unsigned int>(
-								busOutput.inputChannelToOutputChannels[channel].size()); ++outChannel)
-							Detail::SimdHelper::CopyBuffer(trackInfo[track.get()].mainTrackBuffer.buffer.data(), channelOutputBuffer.data(),
-								channel * nFrames, outChannel * nFrames, nFrames);
-
-						// TODO: Support Surround Panning
-						// Apply panning (for panning Mono tracks to Stereo buses)
-						if (busOutput.inputChannelToOutputChannels[channel].size() == static_cast<std::size_t>(TrackState::ChannelNumber::Stereo)
-							&& track->nChannels == TrackState::ChannelNumber::Mono)
-							ApplyStereoPanning(track->pan, channelOutputBuffer, busOutput.inputChannelToOutputChannels[channel].size(), nFrames);
-
-						// Go through each output for this track channel (one track channel -> multiple bus channel mapping)
-						unsigned int inChannel = 0;
-						for (unsigned int outChannel : busOutput.inputChannelToOutputChannels[channel])
-						{
-							// Finally, pass the track output to the bus buffer (as input)
-							std::vector<float>& busOutputBuffer = busInfo[busOutput.bus.get()].mainBusBuffer.buffer;
-
-							// busOutputBuffer[outChannel] += channelOutputBuffer[inChannel]
-							Detail::SimdHelper::AccumulateBuffer(
-								channelOutputBuffer.data(),
-								busOutputBuffer.data(),
-								inChannel * nFrames, outChannel * nFrames,
-								nFrames);
-
-							++inChannel;
-						}
-					}
-				}
-			}
-
-			// Process Buses
+			// Process Buses (one thread per bus)
+			busThreads.Resize(buses.size());
 			for (const std::shared_ptr<TrackState::Bus>& bus : buses)
-				ProcessBus(bus, nFrames, nOutChannels, sampleRate);
+			{
+				mixableInfo[bus.get()].processAsync = busThreads.Queue(
+					[&]()
+					{
+						ProcessBus(bus, nFrames, nOutChannels, sampleRate);
+					});
+			}
 
 			// Send buses to output
 			for (const std::shared_ptr<TrackState::Bus>& bus : buses)
 			{
+				mixableInfo[bus.get()].processAsync.wait();
+
 				// Send out to output device / buffer
 				for (unsigned int channel = 0; channel < static_cast<unsigned int>(bus->nChannels); ++channel)
 				{
@@ -441,6 +491,12 @@ namespace DigiDAW::Core::Audio
 				Detail::SimdHelper::CopyBuffer(testToneBuffer.data(), outputBuffer, 0, channel * nFrames, testToneBuffer.size());
 		}
 
+		// Cancel all pending tasks and make sure all the currently executing tasks finish.
+		// (would be better if there was a way to cancel currently executing tasks)
+		trackThreads.CancelPending();
+		for (auto& pair : mixableInfo)
+			pair.second.processAsync.wait();
+
 		AddToLookback(outputBuffer, 
 			outputInfo.lookbackBuffers,
 			outputInfo.lookbackBufferMutex, 
@@ -470,7 +526,7 @@ namespace DigiDAW::Core::Audio
 				// currently I'm not going to concern myself
 				// with the performance implications of this
 				// but if performance is bad, this is probably one 
-				// of the first places I'd look, as this is called 
+				// of the first places I'd look. As this is called 
 				// every single audio frame, and we're basically using a 
 				// vector as a circular buffer. And while it'd be nice to 
 				// use a more optimal data structure like an actual circular 
@@ -480,8 +536,15 @@ namespace DigiDAW::Core::Audio
 				// we could write a SIMD vector shift function to shift 
 				// everything over by nFrames, making room for the new data.
 				// However there could still be a more optimal way.
+				// 
+				// Another way would be to actually allocate more than you need,
+				// but only use a small portion of the buffer, then just move 
+				// everything back to the beginning of the buffer when it gets full.
+				// That way you'd only have to move things around every so often, 
+				// and not every single addition essentially.
 				// (remember we need to get the peaks and averages, 
-				// but VSTs will need this to be in the correct order too)
+				// but VSTs and other audio effects will need this 
+				// to be in the correct order too)
 
 				buffer.resize(amountOfSamples);
 				offset -= nFrames;
